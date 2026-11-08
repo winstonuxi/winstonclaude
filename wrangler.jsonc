@@ -2,7 +2,7 @@
 // Site chỉ gồm file tĩnh, không có code chạy trên server.
 {
   // Phải trùng tên Worker đã tạo trên Cloudflare
-  "name": "winstonclaude",
+  "name": "learn",
   "compatibility_date": "2026-11-01",
   "assets": {
     // Chỉ đưa folder public/ lên mạng, không đưa wrangler.jsonc hay .git
