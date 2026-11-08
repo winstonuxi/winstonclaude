@@ -1,0 +1,14 @@
+// Cấu hình cho Cloudflare Workers Builds (lệnh deploy: npx wrangler deploy)
+// Site chỉ gồm file tĩnh, không có code chạy trên server.
+{
+  // Phải trùng tên Worker đã tạo trên Cloudflare
+  "name": "winstonclaude",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    // Chỉ đưa folder public/ lên mạng, không đưa wrangler.jsonc hay .git
+    "directory": "./public",
+    // /comfyui sẽ mở comfyui.html, / mở index.html
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  }
+}
