@@ -1,0 +1,1989 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>ComfyUI cho game slot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Archivo (có trục độ rộng wdth) cho chữ chính, IBM Plex Mono cho tên node / tham số. Cả 2 hỗ trợ tiếng Việt -->
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   TOKENS
+   Ý tưởng chính: màu dây của ComfyUI = màu kiểu dữ liệu.
+   Trang dùng chính bộ màu đó làm hệ màu, phần còn lại giữ trung tính.
+   ============================================================ */
+:root{
+  --bg:#F2F3F5; --surface:#FFFFFF; --surface-2:#E9EBEF; --ink:#15171C; --muted:#535965; --faint:#80868F; --line:#D8DBE1;
+  --accent:#1C5FB0; --accent-soft:#E3EDF9;
+  --ok:#2E7D3E; --ok-soft:#E2F2E5; --warn:#A8501A; --warn-soft:#FBEBDD; --bad:#B8362A; --bad-soft:#FBE4E1;
+  /* Màu dây theo kiểu dữ liệu (bản sáng: đậm hơn để đọc được trên nền trắng) */
+  --w-model:#7E5BC2; --w-clip:#A88700; --w-cond:#CF760A; --w-latent:#BE45B3; --w-vae:#D33F46; --w-image:#2A7FC7; --w-mask:#3A944B;
+  --canvas:#E4E6EA; --dot:#C3C7CF; --node:#FFFFFF; --node-head:#2B2E35; --node-head-ink:#F2F3F5;
+  --font:"Archivo",system-ui,-apple-system,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --side:272px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#17181B; --surface:#202226; --surface-2:#2A2D32; --ink:#E8EAEE; --muted:#A9AFBA; --faint:#7C828D; --line:#33363C;
+    --accent:#72B2F0; --accent-soft:#1E2E42;
+    --ok:#7CC98A; --ok-soft:#1D3122; --warn:#F0A060; --warn-soft:#3A2717; --bad:#F08A80; --bad-soft:#3A1F1C;
+    /* Bản tối: đúng màu dây gốc của ComfyUI */
+    --w-model:#B39DDB; --w-clip:#FFD500; --w-cond:#FFA931; --w-latent:#FF9CF9; --w-vae:#FF6E6E; --w-image:#64B5F6; --w-mask:#81C784;
+    --canvas:#1E1F23; --dot:#33363C; --node:#2A2C31; --node-head:#3B3E45; --node-head-ink:#E8EAEE;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#17181B; --surface:#202226; --surface-2:#2A2D32; --ink:#E8EAEE; --muted:#A9AFBA; --faint:#7C828D; --line:#33363C;
+  --accent:#72B2F0; --accent-soft:#1E2E42;
+  --ok:#7CC98A; --ok-soft:#1D3122; --warn:#F0A060; --warn-soft:#3A2717; --bad:#F08A80; --bad-soft:#3A1F1C;
+  --w-model:#B39DDB; --w-clip:#FFD500; --w-cond:#FFA931; --w-latent:#FF9CF9; --w-vae:#FF6E6E; --w-image:#64B5F6; --w-mask:#81C784;
+  --canvas:#1E1F23; --dot:#33363C; --node:#2A2C31; --node-head:#3B3E45; --node-head-ink:#E8EAEE;
+}
+
+/* ============================== BASE ============================== */
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;scroll-padding-top:24px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.62 var(--font);font-variation-settings:"wdth" 100;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:var(--accent);text-underline-offset:2px}
+a:hover{text-decoration-thickness:2px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+code,.mono{font-family:var(--mono);font-size:.88em}
+p code,li code,td code{background:var(--surface-2);padding:1px 5px;border-radius:4px;white-space:nowrap}
+h1,h2,h3,h4{font-variation-settings:"wdth" 116;letter-spacing:-.015em;line-height:1.15;margin:0}
+h2{font-size:clamp(24px,3vw,30px);font-weight:760}
+h3{font-size:19px;font-weight:700;margin:32px 0 10px}
+h4{font-size:16px;font-weight:700;margin:20px 0 6px}
+p{margin:0 0 14px}
+ul,ol{margin:0 0 14px;padding-left:22px}
+li{margin:4px 0}
+strong{font-weight:650}
+button{font:inherit;color:inherit}
+
+/* ============================== LAYOUT ============================== */
+.app{display:grid;grid-template-columns:var(--side) minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:0;height:100vh;overflow-y:auto;border-right:1px solid var(--line);background:var(--surface);padding:22px 18px 18px;display:flex;flex-direction:column;gap:18px}
+.main{min-width:0;padding:28px clamp(16px,4vw,56px) 96px}
+.col{max-width:780px}
+.wide{max-width:1040px}
+
+/* Sidebar */
+.brand{font-weight:780;font-variation-settings:"wdth" 118;font-size:17px;line-height:1.2;text-decoration:none;color:var(--ink)}
+.brand small{display:block;font-weight:400;font-variation-settings:"wdth" 100;font-size:13px;color:var(--muted);margin-top:4px}
+.meter{height:6px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.meter span{display:block;height:100%;width:0;background:var(--w-mask);border-radius:99px;transition:width .3s}
+.prog-text{font-size:13px;color:var(--muted);margin-top:6px}
+.toc{display:flex;flex-direction:column;gap:14px;font-size:14px}
+.toc-group b{display:block;font-size:12.5px;font-weight:600;color:var(--faint);margin:0 0 4px 8px}
+.toc a{display:flex;gap:8px;padding:5px 8px;border-radius:6px;color:var(--muted);text-decoration:none;line-height:1.35}
+.toc a .n{font-family:var(--mono);font-size:12px;color:var(--faint);min-width:18px;padding-top:1px}
+.toc a:hover{background:var(--surface-2);color:var(--ink)}
+.toc a.on{background:var(--accent-soft);color:var(--ink);font-weight:600}
+.side-actions{margin-top:auto;display:flex;gap:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:38px;padding:0 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] .btn.primary{color:#0D1520}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn.primary{color:#0D1520}}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.small{height:32px;padding:0 10px;font-size:13px}
+.side-actions .btn{flex:1}
+
+/* Top bar cho mobile */
+.topbar{display:none}
+
+/* ============================== HERO + NODE GRAPH ============================== */
+.hero{background-color:var(--canvas);background-image:radial-gradient(var(--dot) 1.2px,transparent 1.3px);background-size:22px 22px;border-radius:18px;padding:clamp(22px,4vw,44px);margin-bottom:56px;border:1px solid var(--line)}
+.hero h1{font-size:clamp(34px,5.6vw,60px);font-weight:800;font-variation-settings:"wdth" 122;letter-spacing:-.03em;line-height:1;max-width:14ch}
+.hero .lede{font-size:clamp(16px,1.7vw,18px);color:var(--muted);max-width:60ch;margin:16px 0 26px}
+.next{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 20px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:34px;max-width:760px}
+.next p{margin:0}
+.next .lbl{font-size:13px;color:var(--muted);display:block}
+.next strong{font-weight:650}
+.next .meter{grid-column:1/-1}
+
+.graph{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-areas:"load text ks dec" "load lat ks save";gap:26px clamp(28px,5vw,64px);align-items:center;padding:6px 0}
+.wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.wires path{fill:none;stroke-width:2.6;stroke-linecap:round;transition:opacity .2s}
+.wires path.dim{opacity:.12}
+.node{position:relative;z-index:1;display:block;width:100%;text-align:left;background:var(--node);border:1px solid var(--line);border-radius:9px;padding:0;cursor:pointer;box-shadow:0 1px 0 rgba(0,0,0,.04),0 6px 18px rgba(20,24,32,.07)}
+.node:hover{border-color:var(--faint)}
+.node[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:2px}
+.node-head{display:block;background:var(--node-head);color:var(--node-head-ink);font:600 12.5px/1.3 var(--mono);padding:7px 10px;border-radius:8px 8px 0 0}
+.node-body{display:flex;justify-content:space-between;gap:6px;padding:8px 0 9px}
+.ports{display:flex;flex-direction:column;gap:5px;min-width:0}
+.ports.out{align-items:flex-end;text-align:right}
+.port{display:flex;align-items:center;gap:6px;font:11px/1.2 var(--mono);color:var(--muted);white-space:nowrap}
+.port i{flex:none;width:10px;height:10px;border-radius:50%;background:var(--wc);border:2px solid var(--node)}
+.ports.in .port i{margin-left:-6px}
+.ports.out .port i{margin-right:-6px}
+.node-sub{display:block;padding:0 10px 9px;font-size:12.5px;color:var(--muted);line-height:1.35}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 14px}
+.type-chip{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 11px;border-radius:99px;border:1px solid var(--line);background:var(--surface);font:500 12px var(--mono);cursor:pointer;color:var(--ink)}
+.type-chip i{width:10px;height:10px;border-radius:50%;background:var(--wc)}
+.type-chip[aria-pressed="true"]{border-color:var(--wc);box-shadow:inset 0 0 0 1px var(--wc)}
+.node-detail{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;min-height:96px;max-width:760px}
+.node-detail h3{margin:0 0 6px;font-size:17px}
+.node-detail p:last-child,.node-detail ul:last-child{margin-bottom:0}
+.analogy{color:var(--muted);font-style:italic}
+
+/* ============================== SECTIONS ============================== */
+.part{margin:72px 0 10px;font-size:13px;font-weight:600;color:var(--faint);border-top:1px solid var(--line);padding-top:14px}
+section.sec{margin:0 0 64px}
+.sec-h{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
+.sec-h .num{font:500 15px var(--mono);color:var(--faint);min-width:26px}
+.lead{font-size:17px;color:var(--muted)}
+
+/* Bảng */
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14.5px;line-height:1.5}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{font-weight:650;font-size:13px;color:var(--muted);background:var(--surface-2);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600}
+td.plain{font-weight:400}
+
+/* Callout */
+.callout{border-left:3px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 10px 10px 0;margin:0 0 18px;font-size:15px}
+.callout.warn{border-color:var(--warn);background:var(--warn-soft)}
+.callout.ok{border-color:var(--ok);background:var(--ok-soft)}
+.callout.bad{border-color:var(--bad);background:var(--bad-soft)}
+.callout p:last-child,.callout ul:last-child{margin-bottom:0}
+.callout b.t{display:block;margin-bottom:4px}
+
+/* Code + nút sao chép */
+.code{position:relative;margin:0 0 18px}
+.code pre{margin:0;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;padding-right:96px;overflow-x:auto;font:13px/1.6 var(--mono);white-space:pre-wrap;word-break:break-word}
+.code .copy{position:absolute;top:8px;right:8px}
+
+/* Badge */
+.badge{display:inline-block;font:600 11.5px/1 var(--font);padding:5px 8px;border-radius:5px;white-space:nowrap;margin:1px 0}
+.b-ok{background:var(--ok-soft);color:var(--ok)}
+.b-warn{background:var(--warn-soft);color:var(--warn)}
+.b-bad{background:var(--bad-soft);color:var(--bad)}
+.b-info{background:var(--accent-soft);color:var(--accent)}
+
+/* Thanh công cụ: tìm kiếm, segmented */
+.tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 14px}
+.input,.select,textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.input,.select{height:40px;padding:0 12px;font-size:14.5px}
+.input{flex:1 1 220px;min-width:0}
+.seg{display:inline-flex;flex-wrap:wrap;background:var(--surface-2);border-radius:10px;padding:3px;gap:2px}
+.seg button{border:0;background:none;color:var(--muted);font-size:13.5px;font-weight:600;padding:0 12px;height:34px;border-radius:8px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.toggle{display:inline-flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;user-select:none}
+.toggle input{width:18px;height:18px;accent-color:var(--accent)}
+.count{font-size:13px;color:var(--faint)}
+
+/* Panel công cụ tương tác: viền trái theo màu kiểu dữ liệu liên quan */
+.panel{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--pc,var(--accent));border-radius:10px;padding:18px;margin:0 0 20px}
+.panel > h3:first-child,.panel > h4:first-child{margin-top:0}
+
+/* KSampler denoise slider */
+.denoise{display:grid;gap:10px}
+.denoise input[type=range]{width:100%;accent-color:var(--w-latent)}
+.zones{display:grid;grid-template-columns:15fr 15fr 25fr 35fr 10fr;height:8px;border-radius:99px;overflow:hidden}
+.zones span:nth-child(1){background:var(--surface-2)}
+.zones span:nth-child(2){background:color-mix(in srgb,var(--w-latent) 35%,transparent)}
+.zones span:nth-child(3){background:color-mix(in srgb,var(--w-latent) 60%,transparent)}
+.zones span:nth-child(4){background:color-mix(in srgb,var(--w-latent) 30%,transparent)}
+.zones span:nth-child(5){background:var(--w-latent)}
+.dn-out{display:flex;gap:14px;align-items:baseline}
+.dn-out b{font:600 28px var(--mono);min-width:64px}
+
+/* Checklist */
+.check{list-style:none;padding:0;margin:0 0 12px}
+.check li{margin:0}
+.check label{display:flex;gap:11px;align-items:flex-start;padding:8px 8px;border-radius:8px;cursor:pointer;line-height:1.45}
+.check label:hover{background:var(--surface-2)}
+.check input{flex:none;width:19px;height:19px;margin:1px 0 0;accent-color:var(--ok);cursor:pointer}
+.check input:checked + span{color:var(--faint);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--faint) 60%,transparent)}
+
+/* Level (lộ trình) */
+.level{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin:0 0 12px}
+.level > summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 14px;align-items:center;padding:16px 18px}
+.level > summary::-webkit-details-marker{display:none}
+.lv-num{font:600 26px/1 var(--mono);color:var(--faint);width:30px;text-align:center}
+.level.done .lv-num{color:var(--ok)}
+.lv-title{font-weight:700;font-size:17px;font-variation-settings:"wdth" 112}
+.lv-meta{font-size:13px;color:var(--muted);display:block;font-weight:400;font-variation-settings:"wdth" 100}
+.lv-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;font-size:13px;color:var(--muted)}
+.lv-right .meter{width:90px}
+.lv-body{padding:0 18px 18px 62px}
+.lv-body .out{background:var(--surface-2);border-radius:8px;padding:10px 12px;font-size:14.5px;margin-bottom:12px}
+.reads{font-size:14px;color:var(--muted);margin-bottom:8px}
+.note-wrap{margin-top:8px}
+.note-wrap label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px}
+textarea{width:100%;min-height:92px;padding:10px 12px;font-size:14.5px;line-height:1.5;resize:vertical}
+.saved{font-size:12px;color:var(--faint);height:16px;margin-top:4px}
+
+/* Pipeline step (details) */
+.steps{list-style:none;padding:0;margin:0 0 18px;counter-reset:none}
+.step{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 8px}
+.step > summary{list-style:none;cursor:pointer;display:flex;gap:12px;align-items:center;padding:13px 16px;flex-wrap:wrap}
+.step > summary::-webkit-details-marker{display:none}
+.step .sid{font:600 13px var(--mono);background:var(--node-head);color:var(--node-head-ink);border-radius:5px;padding:3px 7px}
+.step .stitle{font-weight:650;flex:1 1 200px}
+.step .smodel{font-size:12.5px;color:var(--muted)}
+.step[open] > summary{border-bottom:1px solid var(--line)}
+.step-body{padding:14px 16px 4px}
+.chain{display:flex;flex-wrap:wrap;gap:6px 4px;align-items:center;list-style:none;padding:0;margin:0 0 14px}
+.chain li{margin:0;display:flex;align-items:center;gap:4px}
+.chain li code{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:12.5px;white-space:nowrap}
+.chain li + li::before{content:"";width:14px;height:2px;background:var(--faint);display:inline-block}
+.recipe{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:16px 18px;margin:0 0 12px}
+.recipe h4{margin-top:0}
+
+/* Prompt builder */
+.pb-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:14px}
+.field label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:5px}
+.field .input,.field .select{width:100%}
+.out-label{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:12px 0 6px;font-size:13px;font-weight:600;color:var(--muted)}
+.pb-warn{display:none}
+.pb-warn.show{display:block}
+
+/* Dictionary */
+.dict-type{font:500 11.5px var(--mono);color:var(--faint);display:block;font-weight:500}
+
+/* Keyword chips */
+.kws{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.kw{border:1px dashed var(--line);background:var(--surface);border-radius:7px;padding:6px 10px;font:13px var(--mono);cursor:pointer;color:var(--ink)}
+.kw:hover{border-style:solid;border-color:var(--accent)}
+
+/* Sources */
+.src h4{margin-top:22px}
+.src ul{font-size:14.5px}
+
+/* Gộp tài liệu */
+details.merge{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin:0 0 56px}
+details.merge > summary{cursor:pointer;padding:14px 18px;font-weight:650;list-style:none;display:flex;justify-content:space-between;gap:12px}
+details.merge > summary::-webkit-details-marker{display:none}
+details.merge > summary::after,.level > summary::after{content:"+";color:var(--faint);font-weight:400;font-size:20px;line-height:1}
+.level > summary::after{display:none}
+details.merge[open] > summary::after{content:"–"}
+details.merge .inner{padding:0 18px 6px}
+
+/* Cấu trúc prompt: chọn tình huống, công thức đánh số, ví dụ có chú thích */
+.sit-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+.sit-tab{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 11px;font-size:13.5px;font-weight:600;cursor:pointer;color:var(--muted)}
+.sit-tab:hover{color:var(--ink);border-color:var(--faint)}
+.sit-tab[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.formula{display:flex;flex-wrap:wrap;gap:6px;list-style:none;padding:0;margin:0 0 16px}
+.formula li{margin:0;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:99px;padding:3px 11px 3px 3px;font-size:13.5px;background:var(--surface);cursor:default}
+.sn{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--surface-2);font:600 11px/1 var(--mono);color:var(--ink);flex:none}
+.annot{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;font:13.5px/2 var(--mono);margin:0 0 16px;word-break:break-word}
+.annot .sg{border-radius:4px;padding:2px 2px;transition:background .15s}
+.annot .sg .sn{width:17px;height:17px;font-size:10px;margin-right:4px;vertical-align:1px;background:var(--surface);border:1px solid var(--line)}
+.formula li.hl{border-color:var(--accent);background:var(--accent-soft)}
+.annot .sg.hl{background:var(--accent-soft);box-shadow:0 0 0 1px var(--accent)}
+.sit-models{font-size:14px;color:var(--muted);margin:-4px 0 12px}
+
+/* Top 10 model: thẻ mở rộng */
+.mcard{border:1px solid var(--line);border-radius:12px;background:var(--surface);margin:0 0 10px}
+.mcard > summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:6px 14px;align-items:start;padding:15px 16px}
+.mcard > summary::-webkit-details-marker{display:none}
+.mcard[open] > summary{border-bottom:1px solid var(--line)}
+.rank{font:600 22px/1.25 var(--mono);color:var(--faint);text-align:center}
+.mc-name{font-weight:700;font-size:17px;font-variation-settings:"wdth" 112}
+.mc-by{font-size:13px;color:var(--faint);margin-left:8px;font-weight:400}
+.mc-one{display:block;font-size:14.5px;color:var(--muted);margin-top:3px}
+.mc-badges{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;max-width:300px}
+.mc-body{padding:14px 16px 8px 70px}
+.mc-cols{display:grid;grid-template-columns:1fr 1fr;gap:0 28px}
+.mc-body h4{margin:4px 0 6px;font-size:14px;color:var(--muted)}
+.mc-body ul,.mc-body ol{font-size:14.5px}
+.mc-src{font-size:13px;color:var(--faint);margin-bottom:10px}
+
+/* Drawer ghi chú */
+.scrim{position:fixed;inset:0;background:rgba(10,12,16,.4);opacity:0;pointer-events:none;transition:opacity .2s;z-index:40}
+.scrim.show{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;height:100%;width:min(440px,100%);background:var(--surface);border-left:1px solid var(--line);z-index:41;transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;padding:20px;gap:14px;overflow-y:auto}
+.drawer.show{transform:none}
+.drawer-h{display:flex;justify-content:space-between;align-items:center}
+.drawer-h h2{font-size:22px}
+.drawer textarea{min-height:220px}
+.drawer .row{display:flex;flex-wrap:wrap;gap:8px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;opacity:0;pointer-events:none;transition:all .2s;z-index:60}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){.drawer,.scrim,.toast,.meter span{transition:none}}
+
+/* ============================== RESPONSIVE ============================== */
+@media (max-width:980px){
+  .app{grid-template-columns:1fr}
+  .side{position:fixed;inset:0 auto 0 0;width:min(320px,88%);z-index:41;transform:translateX(-100%);transition:transform .25s ease;height:100%}
+  .side.show{transform:none}
+  .topbar{display:flex;position:sticky;top:0;z-index:30;align-items:center;gap:10px;padding:10px 16px;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .topbar .t{font-weight:700;font-size:15px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .topbar .meter{width:64px}
+  .main{padding-top:18px}
+  html{scroll-padding-top:70px}
+}
+@media (max-width:760px){
+  .graph{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"load text" "lat ks" "dec save";gap:24px 30px}
+  .node-sub{display:none}
+  .lv-body{padding:0 14px 16px}
+  .level > summary{grid-template-columns:auto minmax(0,1fr);padding:14px}
+  .lv-right{grid-column:1/-1;flex-direction:row;align-items:center;justify-content:space-between}
+  .next{grid-template-columns:1fr}
+  .next .btn{justify-self:start}
+  th,td{padding:9px 10px}
+  .mcard > summary{grid-template-columns:30px minmax(0,1fr);padding:13px 14px}
+  .mc-badges{grid-column:1/-1;justify-content:flex-start;max-width:none}
+  .mc-by{display:block;margin:0}
+  .mc-body{padding:12px 14px 6px}
+  .mc-cols{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- Top bar chỉ hiện trên màn hình nhỏ -->
+<div class="topbar">
+  <button class="btn small" id="tocBtn" aria-controls="side" aria-expanded="false">Mục lục</button>
+  <span class="t">ComfyUI cho game slot</span>
+  <div class="meter" aria-hidden="true"><span class="js-bar"></span></div>
+  <button class="btn small" data-open-notes>Ghi chú</button>
+</div>
+
+<div class="app">
+  <aside class="side" id="side" aria-label="Mục lục">
+    <a class="brand" href="#top">ComfyUI cho game slot<small>MacBook Pro M2 Max 32GB</small></a>
+    <div>
+      <div class="meter" aria-hidden="true"><span class="js-bar"></span></div>
+      <div class="prog-text"><span class="js-done">0</span>/<span class="js-total">0</span> việc trong lộ trình</div>
+    </div>
+    <nav class="toc" id="toc">
+      <div class="toc-group"><b>Bắt đầu</b>
+        <a href="#lo-trinh"><span class="n">0</span>Lộ trình Level 0–5</a>
+      </div>
+      <div class="toc-group"><b>Hiểu bản chất</b>
+        <a href="#ban-chat"><span class="n">1</span>ComfyUI làm gì khi bấm Run</a>
+        <a href="#kieu-du-lieu"><span class="n">2</span>Màu dây là kiểu dữ liệu</a>
+        <a href="#ksampler"><span class="n">3</span>KSampler</a>
+        <a href="#tu-dien"><span class="n">4</span>Từ điển node và thuật ngữ</a>
+        <a href="#doc-workflow"><span class="n">5</span>Đọc workflow người khác</a>
+      </div>
+      <div class="toc-group"><b>Chuẩn bị máy và model</b>
+        <a href="#mac"><span class="n">6</span>Setup Mac M2 Max</a>
+        <a href="#model"><span class="n">7</span>Model chạy local</a>
+        <a href="#top-model"><span class="n">8</span>Top 10 model cho game</a>
+        <a href="#custom-node"><span class="n">9</span>Custom node tối thiểu</a>
+      </div>
+      <div class="toc-group"><b>Làm asset slot</b>
+        <a href="#tach-asset"><span class="n">10</span>Tách asset</a>
+        <a href="#pipeline"><span class="n">11</span>Pipeline sản xuất</a>
+        <a href="#cau-truc-prompt"><span class="n">12</span>Cấu trúc prompt</a>
+        <a href="#prompt"><span class="n">13</span>Tạo prompt</a>
+        <a href="#dat-ten"><span class="n">14</span>Đặt tên và folder</a>
+        <a href="#qa"><span class="n">15</span>Checklist QA</a>
+      </div>
+      <div class="toc-group"><b>Tra cứu</b>
+        <a href="#loi"><span class="n">16</span>Lỗi hay gặp</a>
+        <a href="#studio-tq"><span class="n">17</span>Studio Trung Quốc làm thế nào</a>
+        <a href="#nguon"><span class="n">18</span>Nguồn tham khảo</a>
+      </div>
+    </nav>
+    <div class="side-actions">
+      <button class="btn" data-open-notes>Ghi chú</button>
+      <button class="btn" id="themeBtn" aria-label="Đổi giao diện sáng hoặc tối">Sáng / tối</button>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <main class="main" id="top">
+
+    <!-- ============================== HERO ============================== -->
+    <header class="hero wide">
+      <h1>ComfyUI cho asset game slot</h1>
+      <p class="lede">Đi từ con số 0 đến một bộ asset dùng được: symbol, nền, khung reel, nút, banner. Chạy trên MacBook Pro M2 Max 32GB. Tiến độ và ghi chú lưu ngay trên trình duyệt này.</p>
+
+      <div class="next">
+        <p><span class="lbl">Việc tiếp theo của bạn</span><strong id="nextText">Đang tải…</strong></p>
+        <a class="btn primary" id="nextBtn" href="#lo-trinh">Mở việc này</a>
+        <div class="meter" aria-hidden="true"><span class="js-bar"></span></div>
+      </div>
+
+      <!-- Sơ đồ workflow lõi: dây vẽ bằng SVG từ vị trí cổng, tự vẽ lại khi đổi kích thước -->
+      <div class="graph" id="graph">
+        <svg class="wires" id="wires" aria-hidden="true"></svg>
+
+        <button class="node" style="grid-area:load" data-node="load" aria-pressed="false">
+          <span class="node-head">Load model</span>
+          <span class="node-body">
+            <span class="ports in"></span>
+            <span class="ports out">
+              <span class="port" style="--wc:var(--w-model)">MODEL<i data-port="load-model"></i></span>
+              <span class="port" style="--wc:var(--w-clip)">CLIP<i data-port="load-clip"></i></span>
+              <span class="port" style="--wc:var(--w-vae)">VAE<i data-port="load-vae"></i></span>
+            </span>
+          </span>
+          <span class="node-sub">Chọn họa sĩ sẽ vẽ</span>
+        </button>
+
+        <button class="node" style="grid-area:text" data-node="text" aria-pressed="false">
+          <span class="node-head">CLIP Text Encode</span>
+          <span class="node-body">
+            <span class="ports in"><span class="port" style="--wc:var(--w-clip)"><i data-port="text-clip"></i>CLIP</span></span>
+            <span class="ports out"><span class="port" style="--wc:var(--w-cond)">COND +/−<i data-port="text-cond"></i></span></span>
+          </span>
+          <span class="node-sub">Viết brief cho họa sĩ</span>
+        </button>
+
+        <button class="node" style="grid-area:lat" data-node="lat" aria-pressed="false">
+          <span class="node-head">Empty Latent Image</span>
+          <span class="node-body">
+            <span class="ports in"></span>
+            <span class="ports out"><span class="port" style="--wc:var(--w-latent)">LATENT<i data-port="lat-out"></i></span></span>
+          </span>
+          <span class="node-sub">Tờ giấy nhiễu</span>
+        </button>
+
+        <button class="node" style="grid-area:ks" data-node="ks" aria-pressed="false">
+          <span class="node-head">KSampler</span>
+          <span class="node-body">
+            <span class="ports in">
+              <span class="port" style="--wc:var(--w-model)"><i data-port="ks-model"></i>model</span>
+              <span class="port" style="--wc:var(--w-cond)"><i data-port="ks-pos"></i>positive</span>
+              <span class="port" style="--wc:var(--w-cond)"><i data-port="ks-neg"></i>negative</span>
+              <span class="port" style="--wc:var(--w-latent)"><i data-port="ks-lat"></i>latent</span>
+            </span>
+            <span class="ports out"><span class="port" style="--wc:var(--w-latent)">LATENT<i data-port="ks-out"></i></span></span>
+          </span>
+          <span class="node-sub">Gỡ nhiễu từng bước</span>
+        </button>
+
+        <button class="node" style="grid-area:dec" data-node="dec" aria-pressed="false">
+          <span class="node-head">VAE Decode</span>
+          <span class="node-body">
+            <span class="ports in">
+              <span class="port" style="--wc:var(--w-latent)"><i data-port="dec-lat"></i>samples</span>
+              <span class="port" style="--wc:var(--w-vae)"><i data-port="dec-vae"></i>vae</span>
+            </span>
+            <span class="ports out"><span class="port" style="--wc:var(--w-image)">IMAGE<i data-port="dec-img"></i></span></span>
+          </span>
+          <span class="node-sub">In tranh ra giấy</span>
+        </button>
+
+        <button class="node" style="grid-area:save" data-node="save" aria-pressed="false">
+          <span class="node-head">Save Image</span>
+          <span class="node-body">
+            <span class="ports in"><span class="port" style="--wc:var(--w-image)"><i data-port="save-img"></i>images</span></span>
+            <span class="ports out"></span>
+          </span>
+          <span class="node-sub">Lưu PNG kèm workflow</span>
+        </button>
+      </div>
+
+      <div class="legend" id="legend" aria-label="Lọc dây theo kiểu dữ liệu"></div>
+      <div class="node-detail" id="nodeDetail" aria-live="polite"></div>
+    </header>
+
+    <!-- ============================== GỘP TÀI LIỆU ============================== -->
+    <details class="merge col">
+      <summary>Trang này gộp 2 tài liệu thế nào (9 điểm khác nhau và lựa chọn cuối)</summary>
+      <div class="inner">
+        <p><b>A</b> là note trong vault <code>03 - resources/comfyui-game-ui-slot-2026-11-08.md</code>. <b>B</b> là file tải về <code>comfyui-slot-game-roadmap (1).md</code>. Khi hai bên khác nhau, trang này ưu tiên A vì A mới hơn, có nguồn kèm theo và đã tính đến license thương mại.</p>
+        <div class="tbl"><table>
+          <thead><tr><th>Chủ đề</th><th>A</th><th>B</th><th>Trang này chọn</th></tr></thead>
+          <tbody>
+            <tr><td>Model chính</td><td class="plain">Z-Image Turbo, FLUX.2 klein 4B, SDXL</td><td class="plain">SDXL chính, SD 1.5 để nháp, FLUX.1-schnell</td><td class="plain">Theo A. Giữ SDXL vì kho LoRA, ControlNet, IPAdapter, LayerDiffuse lớn nhất. Bỏ SD 1.5 vì Z-Image Turbo đã đủ nhanh để nháp</td></tr>
+            <tr><td>Cách viết prompt</td><td class="plain">Câu văn tự nhiên</td><td class="plain">Chuỗi tag</td><td class="plain">Theo model: câu văn cho Z-Image và FLUX.2, tag cho SDXL. Bộ tạo prompt có cả hai</td></tr>
+            <tr><td>Nền khi sinh symbol</td><td class="plain">Xám trung tính</td><td class="plain">Nền tối</td><td class="plain">Xám trung tính để tách nền sạch, sau đó kiểm tra viền halo trên nền tối</td></tr>
+            <tr><td>steps, cfg</td><td class="plain">Giữ số của template; model distilled thì cfg = 1</td><td class="plain">SDXL 25–35 steps, cfg 5–7</td><td class="plain">Không mâu thuẫn, chỉ khác họ model. Bảng KSampler cho chọn model</td></tr>
+            <tr><td>Thứ tự hậu kỳ</td><td class="plain">Tách nền → upscale → paintover → thu nhỏ</td><td class="plain">Upscale nằm trong workflow symbol</td><td class="plain">Theo A, thêm luật của B: chỉ upscale ảnh đã chọn và đã sạch</td></tr>
+            <tr><td>Lộ trình</td><td class="plain">Level 0–5, có số giờ</td><td class="plain">4 giai đoạn, nhiều bài tập</td><td class="plain">Khung của A, bài tập của B gộp vào từng level</td></tr>
+            <tr><td>Mascot</td><td class="plain">Không có</td><td class="plain">Workflow riêng</td><td class="plain">Thêm vào pipeline và Level 3</td></tr>
+            <tr><td>Đặt tên file</td><td class="plain"><code>filename_prefix</code> theo theme/loại</td><td class="plain"><code>[game]_[type]_[theme]_[variant]_[version]</code></td><td class="plain">Folder theo A, tên file theo B</td></tr>
+            <tr><td>Nguồn studio TQ</td><td class="plain">Không có tài liệu chính thức, ghép từ case công khai</td><td class="plain">Như A, kèm từ khóa tìm kiếm</td><td class="plain">Giữ chi tiết của A, thêm từ khóa của B</td></tr>
+          </tbody>
+        </table></div>
+        <p class="count">Các ký hiệu trích nguồn bị hỏng trong B (dạng <code>[web:31]</code>) đã bỏ. Link gốc được giữ ở mục Nguồn tham khảo.</p>
+      </div>
+    </details>
+
+    <div class="col">
+      <div class="callout warn"><b class="t">Phạm vi</b>Chỉ bàn về thiết kế asset: symbol, nền, khung reel, nút, banner, mascot. Không bàn vận hành cờ bạc hay chỉnh RTP. Số liệu tốc độ là ước tính hoặc lấy từ máy khác, cần tự đo lại trên máy mình.</div>
+    </div>
+
+    <!-- ============================== LỘ TRÌNH ============================== -->
+    <section class="sec col" id="lo-trinh">
+      <div class="sec-h"><h2>Lộ trình Level 0 → 5</h2></div>
+      <p class="lead">Tổng khoảng 35–40 giờ (ước tính). Mỗi level kết thúc bằng một asset thật để đưa vào portfolio. Tích vào việc đã làm, ghi kết quả vào ô ghi chú của level đó.</p>
+      <div class="callout"><b class="t">Cách học để hiểu bản chất</b>Mỗi workflow tải về, trước khi chạy, ghi 4 dòng: đầu ra là gì, node nào sửa MODEL, node nào sửa CONDITIONING, node nào sửa LATENT hoặc IMAGE. Có ô để ghi ở <a href="#doc-workflow">mục 5</a>.</div>
+      <div id="levels"></div>
+    </section>
+
+    <!-- ============================== PHẦN: HIỂU BẢN CHẤT ============================== -->
+    <div class="part col">Hiểu bản chất</div>
+
+    <section class="sec col" id="ban-chat">
+      <div class="sec-h"><span class="num">1</span><h2>ComfyUI làm gì khi bấm Run</h2></div>
+      <p class="lead">Hình dung ComfyUI như một bảng mạch. Mỗi node là một linh kiện làm một việc. Mỗi dây truyền một loại dữ liệu. Workflow là toàn bộ sơ đồ.</p>
+
+      <h3>Diffusion, giải thích ngắn</h3>
+      <ul>
+        <li>Model bắt đầu từ một <strong>ảnh toàn nhiễu</strong>. Mỗi bước (step), nó đoán phần nào là nhiễu rồi gỡ bớt, theo hướng prompt chỉ ra.</li>
+        <li>Việc gỡ nhiễu diễn ra trong <strong>latent</strong>, tức ảnh đã được nén nhỏ. Với SDXL, ảnh 1024px chỉ còn lưới 128×128, nên chạy nhanh hơn nhiều.</li>
+        <li><strong>VAE</strong> là bộ nén và giải nén giữa ảnh thật và latent.</li>
+      </ul>
+
+      <h3>Một “model” thật ra gồm 3 phần</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>Phần</th><th>Vai trò</th><th>Ví dụ file</th></tr></thead>
+        <tbody>
+          <tr><td>Diffusion model (UNet hoặc DiT)</td><td class="plain">Bộ não gỡ nhiễu. Quyết định style và chất lượng</td><td class="plain"><code>z_image_turbo_bf16.safetensors</code></td></tr>
+          <tr><td>Text encoder (CLIP, T5, Qwen3…)</td><td class="plain">Dịch prompt thành vector model hiểu được</td><td class="plain"><code>qwen_3_4b.safetensors</code></td></tr>
+          <tr><td>VAE</td><td class="plain">Nén ảnh thành latent và giải nén ngược lại</td><td class="plain"><code>ae.safetensors</code></td></tr>
+        </tbody>
+      </table></div>
+      <ul>
+        <li><strong>SDXL</strong> gói cả 3 phần vào 1 file checkpoint, nạp bằng <code>Load Checkpoint</code>.</li>
+        <li><strong>Model đời mới</strong> (Z-Image, FLUX.2, Qwen) tách thành 3 file, nạp bằng 3 node <code>Load Diffusion Model</code>, <code>Load CLIP</code>, <code>Load VAE</code>. Mỗi file nằm đúng folder: <code>models/diffusion_models</code>, <code>models/text_encoders</code>, <code>models/vae</code>.</li>
+      </ul>
+
+      <h3>Bản chất chỉ có 5 khối, và 4 chỗ để can thiệp</h3>
+      <p>Nạp model → mã hóa prompt → gỡ nhiễu trong latent (KSampler) → giải mã (VAE) → lưu ảnh. Workflow “phức tạp” của studio chỉ là cắm thêm node vào một trong 4 chỗ: <strong>sửa MODEL</strong>, <strong>sửa CONDITIONING</strong>, <strong>sửa LATENT</strong>, hoặc <strong>xử lý IMAGE</strong> sau khi giải mã. Hiểu 4 chỗ này là đọc được mọi workflow.</p>
+
+      <h3>Cách ComfyUI chạy</h3>
+      <ul>
+        <li>Bấm Run (<code>Cmd + Enter</code>) thì ComfyUI chạy <strong>ngược từ node đầu ra</strong>. Node nào không nối tới đầu ra thì không chạy.</li>
+        <li><strong>Cache:</strong> chỉ chạy lại node có thay đổi. Đổi prompt thì không phải nạp lại model. Đổi seed thì chỉ chạy lại từ KSampler trở về sau. Vì vậy lần đầu lâu, các lần sau nhanh hơn.</li>
+        <li><strong>Workflow nằm sẵn trong file PNG</strong> xuất ra. Kéo PNG vào canvas là mở lại nguyên workflow, kể cả seed. Đây là cách nhanh nhất để học workflow của người khác.</li>
+      </ul>
+    </section>
+
+    <section class="sec col" id="kieu-du-lieu">
+      <div class="sec-h"><span class="num">2</span><h2>Màu dây là kiểu dữ liệu</h2></div>
+      <p class="lead">Dây chỉ nối được giữa 2 cổng cùng kiểu dữ liệu. Biết kiểu dữ liệu là biết node đó cắm vào đâu. Bấm một màu ở sơ đồ đầu trang để xem dây đó đi đâu.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Kiểu</th><th>Là gì</th><th>Ai tạo ra → ai dùng</th></tr></thead>
+        <tbody id="typeTable"></tbody>
+      </table></div>
+    </section>
+
+    <section class="sec col" id="ksampler">
+      <div class="sec-h"><span class="num">3</span><h2>KSampler: 7 tham số</h2></div>
+      <p class="lead">Trái tim của workflow. Nguyên tắc: với model mới, mở template chính thức và <strong>giữ nguyên số của template</strong>, chỉ đổi prompt và kích thước. Mỗi lần chỉ đổi 1 tham số.</p>
+
+      <div class="tools">
+        <div class="seg" id="ksModel" role="group" aria-label="Chọn model">
+          <button data-m="z" aria-pressed="true">Z-Image Turbo</button>
+          <button data-m="f" aria-pressed="false">FLUX.2 klein 4B</button>
+          <button data-m="s" aria-pressed="false">SDXL</button>
+        </div>
+      </div>
+      <div class="tbl"><table>
+        <thead><tr><th>Tham số</th><th>Bản chất</th><th id="ksColHead">Giá trị</th><th>Mẹo cho asset slot</th></tr></thead>
+        <tbody id="ksTable"></tbody>
+      </table></div>
+
+      <div class="panel" style="--pc:var(--w-latent)">
+        <h4>Thử kéo denoise</h4>
+        <div class="denoise">
+          <input type="range" id="dn" min="0" max="1" step="0.05" value="0.45" aria-label="Giá trị denoise">
+          <div class="zones" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="dn-out"><b id="dnVal">0.45</b><span id="dnText"></span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec col" id="tu-dien">
+      <div class="sec-h"><span class="num">4</span><h2>Từ điển node và thuật ngữ</h2></div>
+      <p class="lead">Gộp bảng thuật ngữ cho người mới và từ điển node lõi. Gõ để lọc.</p>
+      <div class="tools">
+        <input class="input" id="dictQ" type="search" placeholder="Tìm: LoRA, denoise, inpaint…" aria-label="Tìm trong từ điển">
+        <span class="count" id="dictCount"></span>
+      </div>
+      <div class="tbl"><table>
+        <thead><tr><th>Tên</th><th>Nghĩa / làm gì</th><th>Cần biết</th></tr></thead>
+        <tbody id="dictTable"></tbody>
+      </table></div>
+    </section>
+
+    <section class="sec col" id="doc-workflow">
+      <div class="sec-h"><span class="num">5</span><h2>Đọc workflow của người khác</h2></div>
+      <p class="lead">Áp dụng được cả cho workflow tiếng Trung.</p>
+      <ol>
+        <li><strong>Tìm node đầu ra</strong> (Save, Preview) rồi lần ngược theo dây.</li>
+        <li><strong>Khoanh 6 khối lõi</strong> như sơ đồ đầu trang.</li>
+        <li><strong>Phân loại mọi node còn lại</strong> theo chỗ nó can thiệp (bảng dưới).</li>
+        <li><strong>Bypass từng node</strong> (<code>Cmd + B</code>) rồi chạy lại để thấy node đó tạo ra khác biệt gì.</li>
+        <li><strong>Thiếu node:</strong> Manager → <em>Install Missing Custom Nodes</em>. Trước khi cài, xem repo: số sao, lần commit gần nhất, license.</li>
+      </ol>
+      <div class="tbl"><table>
+        <thead><tr><th>Can thiệp vào</th><th>Node hay gặp</th><th>Mục đích</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--w-model)">MODEL</td><td class="plain">LoRA, IPAdapter, ModelSampling (shift), PAG, patch tăng tốc</td><td class="plain">Đổi “bộ não”: style, nhân vật, cách lấy mẫu</td></tr>
+          <tr><td style="color:var(--w-cond)">CONDITIONING</td><td class="plain">ControlNet, ReferenceLatent / ảnh tham chiếu (FLUX.2, Qwen Edit), ghép prompt</td><td class="plain">Thêm điều kiện: bố cục, ảnh mẫu, chỉ dẫn sửa</td></tr>
+          <tr><td style="color:var(--w-latent)">LATENT</td><td class="plain">VAE Encode (img2img), mask inpaint, upscale latent</td><td class="plain">Không bắt đầu từ giấy trắng</td></tr>
+          <tr><td style="color:var(--w-image)">IMAGE</td><td class="plain">Upscale, tách nền, crop, chỉnh màu, ghép layer, lưu</td><td class="plain">Hậu kỳ, không dùng AI gỡ nhiễu</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout warn"><b class="t">Node không chạy trên Mac</b>Node có chữ <code>cuda</code>, <code>xformers</code>, <code>triton</code>, <code>sageattention</code>, <code>TensorRT</code> trong tên hoặc yêu cầu thường không chạy trên Mac. Workflow tiếng Trung: đổi ngôn ngữ giao diện trong Settings, hoặc nhờ Claude dịch tên node. Đường dẫn model kiểu Windows (<code>D:\...</code>) thì chọn lại file trong loader.</div>
+      <p><strong>Mẹo thao tác:</strong> double-click canvas để tìm node. Kéo dây từ một cổng ra chỗ trống, ComfyUI chỉ gợi ý node nhận được kiểu dữ liệu đó.</p>
+
+      <div class="panel" style="--pc:var(--w-cond)">
+        <h4>Bài tập 4 dòng cho workflow đang đọc</h4>
+        <div class="pb-grid" style="grid-template-columns:1fr">
+          <div class="field"><label for="rd-name">Workflow nào (tên file / link)</label><input class="input" id="rd-name" data-note="read-name" style="width:100%"></div>
+          <div class="field"><label for="rd-1">1. Đầu ra là gì?</label><textarea id="rd-1" data-note="read-1" style="min-height:56px"></textarea></div>
+          <div class="field"><label for="rd-2">2. Node nào sửa MODEL?</label><textarea id="rd-2" data-note="read-2" style="min-height:56px"></textarea></div>
+          <div class="field"><label for="rd-3">3. Node nào sửa CONDITIONING?</label><textarea id="rd-3" data-note="read-3" style="min-height:56px"></textarea></div>
+          <div class="field"><label for="rd-4">4. Node nào sửa LATENT hoặc IMAGE?</label><textarea id="rd-4" data-note="read-4" style="min-height:56px"></textarea></div>
+        </div>
+        <button class="btn small" id="readClear">Xóa để đọc workflow khác</button>
+        <p class="count" style="margin:8px 0 0">Ghi đủ 4 dòng là đã đọc hiểu workflow đó. Nội dung được gom vào file xuất ở mục Ghi chú.</p>
+      </div>
+    </section>
+
+    <!-- ============================== PHẦN: CHUẨN BỊ MÁY ============================== -->
+    <div class="part col">Chuẩn bị máy</div>
+
+    <section class="sec col" id="mac">
+      <div class="sec-h"><span class="num">6</span><h2>Setup MacBook Pro M2 Max 32GB</h2></div>
+      <p class="lead">Máy chạy tốt model đến khoảng 10B. Người mới nên dùng <strong>ComfyUI Desktop</strong>: dễ cài, có sẵn Manager. Cài thủ công chỉ khi muốn tự quản môi trường Python.</p>
+
+      <div class="callout bad"><b class="t">3 bẫy kỹ thuật trên Mac</b>
+        <ol style="margin:4px 0 0">
+          <li>File <strong>fp8 không chạy</strong> trên MPS (GPU của Mac), báo lỗi <code>Trying to convert Float8_e4m3fn to the MPS backend</code>. Nhiều template tải sẵn bản fp8, phải tự tải bản bf16/fp16 hoặc GGUF.</li>
+          <li>Chip M1–M3 <strong>không có BF16 phần cứng</strong>. Một lần update đổi Qwen Image Edit sang bf16 làm thời gian một ảnh tăng từ khoảng 80 giây lên gần 10 phút trên M1 Max. <strong>Ghi lại version ComfyUI đang chạy ổn trước khi update.</strong></li>
+          <li>Model 20B+ (Qwen-Image, FLUX.2 dev) chạy được nhưng mất nhiều phút một ảnh. Việc nặng (train LoRA, tách layer, video) nên thuê cloud GPU.</li>
+        </ol>
+      </div>
+
+      <h3>Ngân sách bộ nhớ</h3>
+      <ul>
+        <li>Dùng được khoảng 80% unified memory, tức khoảng <strong>25GB</strong>, chung cho model và macOS.</li>
+        <li>Đóng Chrome nhiều tab, Figma, Photoshop, Blender khi chạy model lớn.</li>
+        <li>Bắt đầu ở 1024×1024 hoặc 1024×1536. Không sinh 4K ngay. Upscale sau khi đã chọn ảnh.</li>
+        <li>Máy chậm hoặc hết bộ nhớ thì giảm <code>batch_size</code> về 1.</li>
+      </ul>
+
+      <h3>Thứ tự thử khi model chạy chậm</h3>
+      <ol>
+        <li>Chạy mặc định trước.</li>
+        <li>Chậm thì thử UNET fp16 (cờ <code>--fp16-unet</code>).</li>
+        <li>Ra ảnh đen thì bỏ cờ fp16, nhất là <code>--fp16-vae</code>.</li>
+      </ol>
+      <p>Bản Desktop không có dòng lệnh: chỉnh cờ trong <em>Settings → Server-Config</em>. Bản cài thủ công thì dùng cờ dòng lệnh.</p>
+
+      <h3>File nào bỏ vào folder nào</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>Folder trong <code>models/</code></th><th>Chứa gì</th></tr></thead>
+        <tbody>
+          <tr><td><code>checkpoints</code></td><td class="plain">File all-in-one của SDXL</td></tr>
+          <tr><td><code>diffusion_models</code></td><td class="plain">Phần gỡ nhiễu của Z-Image, FLUX.2</td></tr>
+          <tr><td><code>text_encoders</code></td><td class="plain">Text encoder, ví dụ <code>qwen_3_4b.safetensors</code></td></tr>
+          <tr><td><code>vae</code></td><td class="plain">VAE của từng họ model</td></tr>
+          <tr><td><code>loras</code></td><td class="plain">LoRA style, nhân vật</td></tr>
+          <tr><td><code>controlnet</code></td><td class="plain">ControlNet cho SDXL</td></tr>
+          <tr><td><code>model_patches</code></td><td class="plain">ControlNet của Z-Image (Fun ControlNet Union)</td></tr>
+          <tr><td><code>unet</code></td><td class="plain">Model nén dạng GGUF</td></tr>
+          <tr><td><code>upscale_models</code></td><td class="plain">Real-ESRGAN và model upscale khác</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>Tiết kiệm ổ đĩa và RAM</h3>
+      <ul>
+        <li>Template Z-Image Turbo và FLUX.2 klein 4B dùng chung text encoder <code>qwen_3_4b.safetensors</code>. Tải 1 lần, dùng chung (so kích thước 2 file cho chắc).</li>
+        <li>Model lớn không vừa RAM thì đổi sang <strong>GGUF</strong> (Q8 hoặc Q5). Chất lượng giảm nhẹ, RAM giảm nhiều.</li>
+        <li>Train LoRA, Qwen-Image-Layered, video thì thuê cloud GPU (RunPod, RunComfy, RunningHub, Comfy Cloud). Trên Mac chỉ nên sinh ảnh và hậu kỳ.</li>
+      </ul>
+
+      <h3>Tốc độ tham khảo (không phải số đo trên máy bạn)</h3>
+      <ul>
+        <li>SDXL 1024px, 20 bước: khoảng 37 giây trên M2 Max theo benchmark Core ML của Apple. ComfyUI chạy PyTorch nên có thể chậm hơn.</li>
+        <li>Model 10B (Boogu Turbo, 4 bước): khoảng 70 giây một ảnh trên M1 Max.</li>
+        <li>Qwen Image Edit AIO: 5–6 phút một ảnh trên M1 Max.</li>
+      </ul>
+    </section>
+
+    <section class="sec wide" id="model">
+      <div class="col">
+        <div class="sec-h"><span class="num">7</span><h2>Model chạy local</h2></div>
+        <p class="lead">Làm asset cho khách thì chỉ dùng model có license thương mại (Apache, MIT, OpenRAIL++). Trước khi nhận dự án, mở model card trên Hugging Face để đọc license gốc. Model gọi qua API (Nano Banana, GPT Image…) nằm ở <a href="#top-model">mục 8</a>.</p>
+      </div>
+      <div class="tools">
+        <label class="toggle"><input type="checkbox" id="fCommercial"> Chỉ model dùng cho khách được</label>
+        <label class="toggle"><input type="checkbox" id="fMac"> Chỉ model chạy tốt trên M2 Max</label>
+        <span class="count" id="modelCount"></span>
+      </div>
+      <div class="tbl"><table>
+        <thead><tr><th>Model</th><th>Cỡ</th><th>License</th><th>Trên M2 Max 32GB</th><th>Dùng cho asset slot</th></tr></thead>
+        <tbody id="modelTable"></tbody>
+      </table></div>
+
+      <div class="col">
+        <h3>Model phụ trợ</h3>
+        <div class="tbl"><table>
+          <thead><tr><th>Việc</th><th>Model</th><th>License</th></tr></thead>
+          <tbody>
+            <tr><td>Tách nền</td><td class="plain"><a href="https://huggingface.co/ZhengPeng7/BiRefNet" target="_blank" rel="noopener">BiRefNet</a></td><td class="plain"><span class="badge b-ok">MIT</span></td></tr>
+            <tr><td>Tách nền</td><td class="plain"><a href="https://huggingface.co/PramaLLC/BEN2" target="_blank" rel="noopener">BEN2</a> (bản base)</td><td class="plain"><span class="badge b-ok">MIT</span></td></tr>
+            <tr><td>Tách nền</td><td class="plain"><a href="https://huggingface.co/briaai/RMBG-2.0" target="_blank" rel="noopener">RMBG-2.0</a> (BRIA)</td><td class="plain"><span class="badge b-bad">CC BY-NC 4.0</span> muốn dùng thương mại phải mua license</td></tr>
+            <tr><td>Upscale</td><td class="plain">Real-ESRGAN x4plus</td><td class="plain"><span class="badge b-ok">BSD-3</span> model upscale cộng đồng có thể là NC, kiểm tra từng cái</td></tr>
+            <tr><td>ControlNet cho Z-Image</td><td class="plain">Z-Image-Turbo-Fun-Controlnet-Union, đặt vào <code>models/model_patches</code></td><td class="plain">Theo trang model</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <section class="sec wide" id="top-model">
+      <div class="col">
+        <div class="sec-h"><span class="num">8</span><h2>Top 10 model cho asset và UI game</h2></div>
+        <p class="lead">Cập nhật 11/2026. Gồm cả model chạy local trong ComfyUI và model gọi qua API. Xếp theo mức hữu ích cho việc làm asset slot trên M2 Max, không theo một bảng điểm duy nhất. Bấm từng model để xem ưu điểm, cách dùng và prompt mẫu.</p>
+        <div class="callout warn"><b class="t">Cách đọc thứ hạng</b>Thứ tự cân 4 yếu tố: chất lượng game art (với model API, dựa trên benchmark của VibeDex cập nhật 05/2026), license dùng cho khách, chạy được trên máy, chi phí. Phần lớn bài so sánh trên mạng do bên bán công cụ viết, nên coi là tham khảo. Với model API: đọc điều khoản dùng thương mại của từng dịch vụ, và hỏi khách trước khi gửi file của họ lên server bên thứ ba.</div>
+      </div>
+      <div class="tools">
+        <div class="seg" id="tmSeg" role="group" aria-label="Lọc theo cách chạy">
+          <button data-k="all" aria-pressed="true">Tất cả</button>
+          <button data-k="local" aria-pressed="false">Chạy local</button>
+          <button data-k="api" aria-pressed="false">API và web</button>
+        </div>
+        <span class="count" id="tmCount"></span>
+      </div>
+      <div id="topModels"></div>
+
+      <div class="col">
+        <h3>Chọn nhanh theo việc</h3>
+        <div class="tbl"><table>
+          <thead><tr><th>Việc</th><th>Chạy local</th><th>Qua API</th></tr></thead>
+          <tbody>
+            <tr><td>Khám phá style nhanh</td><td class="plain">Z-Image Turbo</td><td class="plain">Midjourney V8, FLUX.2 Pro</td></tr>
+            <tr><td>Symbol 3D bóng bẩy</td><td class="plain">Z-Image Turbo, SDXL + LoRA</td><td class="plain">Nano Banana Pro, GPT Image 2</td></tr>
+            <tr><td>Giữ style cả bộ symbol</td><td class="plain">FLUX.2 klein (ảnh tham chiếu)</td><td class="plain">Nano Banana 2, Seedream 5.0</td></tr>
+            <tr><td>Ảnh nền trong suốt</td><td class="plain">SDXL + LayerDiffuse</td><td class="plain">GPT Image 2 (<code>background=transparent</code>)</td></tr>
+            <tr><td>Chữ trong ảnh</td><td class="plain">Qwen-Image, Z-Image Turbo</td><td class="plain">GPT Image 2, Nano Banana, Ideogram 4.0</td></tr>
+            <tr><td>Icon UI phẳng, vector</td><td class="plain">Chưa có lựa chọn tốt</td><td class="plain">Recraft V4 (SVG)</td></tr>
+            <tr><td>Nền game, môi trường</td><td class="plain">Z-Image Turbo</td><td class="plain">FLUX.2 Pro</td></tr>
+            <tr><td>Tách layer cho Spine</td><td class="plain">Qwen-Image-Layered (nên chạy cloud GPU)</td><td class="plain">Không có</td></tr>
+            <tr><td>Mockup màn hình để pitch</td><td class="plain">Không nên</td><td class="plain">GPT Image 2, Nano Banana Pro</td></tr>
+          </tbody>
+        </table></div>
+        <h4>Đáng chú ý ngoài top 10</h4>
+        <ul>
+          <li><strong>Ideogram 4.0:</strong> mạnh về chữ trong ảnh, có sẵn trong Partner Nodes của ComfyUI.</li>
+          <li><strong>Scenario:</strong> nền tảng train model style riêng cho game từ khoảng 10–50 ảnh, base Flux hoặc SDXL. Hợp khi muốn cả team dùng chung một style mà không tự train LoRA.</li>
+          <li><strong>Leonardo.ai, PixelLab:</strong> hay được nhắc cho game art nói chung và pixel art, ít liên quan đến asset slot.</li>
+          <li><strong>3D (ngoài phạm vi trang này):</strong> Meshy, Tripo, Hunyuan3D 2.1, TRELLIS.2.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="sec col" id="custom-node">
+      <div class="sec-h"><span class="num">9</span><h2>Custom node tối thiểu</h2></div>
+      <div class="callout bad"><b class="t">An toàn trước khi cài</b>Custom node là code Python chạy trên máy với quyền của bạn. Chỉ cài repo nhiều người dùng và mới cập nhật. Không chạy file <code>.sh</code>/<code>.bat</code> đi kèm “gói workflow” tải từ nhóm chat. Model chỉ tải file <code>.safetensors</code>, vì file <code>.ckpt</code>/<code>.pt</code> có thể chứa code chạy được.</div>
+      <div class="tbl"><table>
+        <thead><tr><th>Node pack</th><th>Dùng làm gì</th><th>Ghi chú</th></tr></thead>
+        <tbody>
+          <tr><td><a href="https://github.com/ltdrdata/ComfyUI-Manager" target="_blank" rel="noopener">ComfyUI-Manager</a></td><td class="plain">Cài node, cài node còn thiếu, cập nhật</td><td class="plain">Có sẵn trong bản Desktop</td></tr>
+          <tr><td><a href="https://github.com/Fannovel16/comfyui_controlnet_aux" target="_blank" rel="noopener">comfyui_controlnet_aux</a></td><td class="plain">Tạo ảnh khung cho ControlNet: Canny, Lineart, Depth</td><td class="plain">Dùng ở W3</td></tr>
+          <tr><td><a href="https://github.com/cubiq/ComfyUI_IPAdapter_plus" target="_blank" rel="noopener">ComfyUI_IPAdapter_plus</a></td><td class="plain">Lấy style hoặc bố cục từ ảnh mẫu (SDXL)</td><td class="plain"><span class="badge b-warn">Chỉ còn bảo trì</span> từ 14/04/2025. Đừng xây hệ thống dài hạn chỉ dựa vào nó</td></tr>
+          <tr><td><a href="https://github.com/huchenlei/ComfyUI-layerdiffuse" target="_blank" rel="noopener">ComfyUI-layerdiffuse</a></td><td class="plain">Sinh ảnh RGBA trong suốt trực tiếp</td><td class="plain">Chỉ SDXL/SD1.5</td></tr>
+          <tr><td><a href="https://github.com/1038lab/ComfyUI-RMBG" target="_blank" rel="noopener">ComfyUI-RMBG</a></td><td class="plain">Tách nền: BiRefNet, BEN2, SAM2/SAM3, Florence-2</td><td class="plain">GPL-3.0. Từ v3.2.0 có tăng tốc MPS. Chọn BiRefNet/BEN2, không chọn RMBG-2.0</td></tr>
+          <tr><td><a href="https://github.com/swan7-py/ComfyUI-ImageAlphaCrop" target="_blank" rel="noopener">ComfyUI-ImageAlphaCrop</a></td><td class="plain">Cắt phần trong suốt thừa quanh icon, chạy hàng loạt</td><td class="plain">Plugin của dev TQ</td></tr>
+          <tr><td><a href="https://github.com/city96/ComfyUI-GGUF" target="_blank" rel="noopener">ComfyUI-GGUF</a></td><td class="plain">Nạp model nén GGUF</td><td class="plain">Cách chính để chạy model lớn trên Mac</td></tr>
+          <tr><td><a href="https://github.com/ssitu/ComfyUI_UltimateSDUpscale" target="_blank" rel="noopener">ComfyUI_UltimateSDUpscale</a></td><td class="plain">Upscale theo từng ô và vẽ lại chi tiết</td><td class="plain">Dùng ở W6</td></tr>
+          <tr><td><a href="https://github.com/ltdrdata/ComfyUI-Impact-Pack" target="_blank" rel="noopener">ComfyUI-Impact-Pack</a></td><td class="plain">Detailer (sửa mặt, chi tiết nhỏ), wildcard</td><td class="plain"></td></tr>
+          <tr><td><a href="https://github.com/rgthree/rgthree-comfy" target="_blank" rel="noopener">rgthree-comfy</a></td><td class="plain">Bật/tắt cả group, điều khiển seed, nạp nhiều LoRA</td><td class="plain">Giúp workflow gọn</td></tr>
+          <tr><td><a href="https://github.com/kijai/ComfyUI-KJNodes" target="_blank" rel="noopener">ComfyUI-KJNodes</a></td><td class="plain">Ghép ảnh, tạo lưới, xử lý mask</td><td class="plain">Dùng để ghép lưới ảnh mẫu ở W2</td></tr>
+          <tr><td><a href="https://github.com/yolain/ComfyUI-Easy-Use" target="_blank" rel="noopener">ComfyUI-Easy-Use</a></td><td class="plain">Node gộp sẵn, vòng lặp for/if, tách nền</td><td class="plain">Phổ biến trong workflow TQ</td></tr>
+          <tr><td><a href="https://github.com/chflame163/ComfyUI_LayerStyle" target="_blank" rel="noopener">ComfyUI_LayerStyle</a></td><td class="plain">Node kiểu Photoshop: layer, mask, stroke, shadow, chỉnh màu</td><td class="plain">MIT, nhưng một số node dùng code bên khác. Dùng thương mại có thể cần xin phép</td></tr>
+        </tbody>
+      </table></div>
+      <p><strong>Cho designer:</strong> <a href="https://github.com/Acly/krita-ai-diffusion" target="_blank" rel="noopener">Krita AI Diffusion</a> dùng ComfyUI làm backend để vẽ đè, inpaint, live painting ngay trong Krita. Mac ở mức cộng đồng hỗ trợ. Hợp cho bước paintover nếu không muốn qua lại giữa Photoshop và ComfyUI.</p>
+    </section>
+
+    <!-- ============================== PHẦN: LÀM ASSET SLOT ============================== -->
+    <div class="part col">Làm asset slot</div>
+
+    <section class="sec col" id="tach-asset">
+      <div class="sec-h"><span class="num">10</span><h2>Tách asset, đừng sinh cả màn hình</h2></div>
+      <p class="lead">Lỗi phổ biến nhất của người mới: cố tạo toàn bộ màn hình game trong một lần. Ảnh đẹp, nhưng đổi chữ, số, màu nút hay một symbol là phải làm lại từ đầu.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Gộp tất cả vào một ảnh</th><th>Tách asset riêng</th></tr></thead>
+        <tbody>
+          <tr><td class="plain">Khó sửa chữ và số</td><td class="plain">Chữ, số làm bằng Figma hoặc Photoshop</td></tr>
+          <tr><td class="plain">Khó đổi màu theme</td><td class="plain">Đổi màu từng phần dễ</td></tr>
+          <tr><td class="plain">Khó tái sử dụng</td><td class="plain">Dùng lại cho nhiều game</td></tr>
+          <tr><td class="plain">Khó kiểm tra lỗi</td><td class="plain">Dễ thấy symbol, frame, nền nào lỗi</td></tr>
+          <tr><td class="plain">Khó chia việc cho team</td><td class="plain">Mỗi người làm một loại asset</td></tr>
+        </tbody>
+      </table></div>
+      <p>Tách thành: <strong>background, symbol, khung UI, nút, mascot, chữ / số / logo, particle / VFX</strong>.</p>
+      <div class="callout ok"><b class="t">Nguyên tắc vàng</b>AI tạo hình ảnh. Con người kiểm soát layout, chữ, số, luật chơi và thương hiệu.</div>
+      <h4>Quy trình production</h4>
+      <ol class="chain" aria-label="Quy trình production">
+        <li><code>Brief game</code></li><li><code>Moodboard</code></li><li><code>Theme và bảng màu</code></li><li><code>Background</code></li><li><code>Symbol</code></li><li><code>Khung UI, nút</code></li><li><code>Mascot</code></li><li><code>Sửa bằng inpaint</code></li><li><code>Upscale</code></li><li><code>Ghép chữ trong Figma</code></li><li><code>Export theo kích thước game</code></li>
+      </ol>
+    </section>
+
+    <section class="sec col" id="pipeline">
+      <div class="sec-h"><span class="num">11</span><h2>Pipeline sản xuất</h2></div>
+      <p class="lead">Xem theo bước khi làm một bộ asset từ đầu. Xem theo loại asset khi chỉ cần làm một thứ.</p>
+      <div class="tools">
+        <div class="seg" id="pipeTabs" role="tablist" aria-label="Cách xem pipeline">
+          <button role="tab" data-tab="steps" aria-pressed="true" aria-selected="true">Theo bước (W1–W7)</button>
+          <button role="tab" data-tab="types" aria-pressed="false" aria-selected="false">Theo loại asset</button>
+        </div>
+      </div>
+
+      <div id="tab-steps">
+        <ol class="steps">
+          <li><details class="step" id="w1"><summary><span class="sid">W1</span><span class="stitle">Khám phá style (txt2img)</span><span class="smodel">Z-Image Turbo</span></summary><div class="step-body">
+            <ol class="chain"><li><code>Template Z-Image Turbo</code></li><li><code>batch_size 4</code></li><li><code>seed randomize</code></li></ol>
+            <ul>
+              <li>Sinh 30–60 ảnh cho 1 theme, chọn <strong>1 key art</strong> cùng 3–5 ảnh phụ.</li>
+              <li>Ưng ảnh nào thì kéo PNG đó vào canvas để lấy lại seed và prompt.</li>
+              <li>Prompt: model đời mới hiểu câu văn tự nhiên tốt hơn chuỗi tag. SDXL thì dùng tag. Công thức theo từng tình huống ở <a href="#cau-truc-prompt">mục 12</a>.</li>
+            </ul></div></details></li>
+
+          <li><details class="step" id="w2"><summary><span class="sid">W2</span><span class="stitle">Khóa style, bước quyết định tốc độ cả dự án</span><span class="smodel">FLUX.2 klein, IPAdapter, LoRA</span></summary><div class="step-body">
+            <div class="tbl"><table>
+              <thead><tr><th>Cách</th><th>Node</th><th>Khi nào</th></tr></thead>
+              <tbody>
+                <tr><td>A. Ảnh tham chiếu</td><td class="plain">FLUX.2 klein: 2–4 symbol đã duyệt làm reference, kèm câu “cùng style, vật thể mới là X”. SDXL: IPAdapter style transfer</td><td class="plain">Bộ nhỏ (≤ 10 symbol), cần nhanh</td></tr>
+                <tr><td>B. Lưới ảnh mẫu</td><td class="plain">Ghép 12–20 ảnh đã duyệt thành lưới 4×4, cỡ 1024×1024 (node tạo lưới trong KJNodes), làm ảnh tham chiếu</td><td class="plain">Dưới 12 ảnh style không ổn định. Trên 20 ảnh model bắt chước cả chi tiết thừa</td></tr>
+                <tr><td>C. Train LoRA</td><td class="plain">15–30 ảnh đã duyệt, caption kèm 1 trigger word. Train trên cloud bằng ai-toolkit cho Z-Image, FLUX.2 klein 4B base, hoặc SDXL</td><td class="plain">Bộ lớn, dùng lâu dài, nhiều theme cùng series</td></tr>
+              </tbody>
+            </table></div></div></details></li>
+
+          <li><details class="step" id="w3"><summary><span class="sid">W3</span><span class="stitle">Sinh symbol theo khung (ControlNet)</span><span class="smodel">Z-Image + Fun ControlNet Union, hoặc SDXL</span></summary><div class="step-body">
+            <p><strong>Vì sao cần:</strong> symbol phải cùng kích thước, cùng tâm, cùng khoảng trống viền để nằm đều trên reel. Prompt không làm được, ControlNet thì có.</p>
+            <ol class="chain"><li><code>Silhouette Figma 1024×1024</code></li><li><code>Load Image</code></li><li><code>Canny / Lineart / Depth</code></li><li><code>Apply ControlNet</code></li><li><code>KSampler</code></li></ol>
+            <ul>
+              <li>Vật thể chiếm 70–85% khung. Canny/Lineart cho sketch nét, Depth cho khối.</li>
+              <li><code>strength</code> 0.5–0.8. <code>end_percent</code> khoảng 0.6–0.8 để các bước cuối model tự do vẽ chi tiết.</li>
+            </ul></div></details></li>
+
+          <li><details class="step" id="w4"><summary><span class="sid">W4</span><span class="stitle">Biến thể và sửa</span><span class="smodel">img2img, inpaint, FLUX.2 klein edit</span></summary><div class="step-body">
+            <div class="tbl"><table>
+              <thead><tr><th>Việc</th><th>Cách</th><th>Thông số</th></tr></thead>
+              <tbody>
+                <tr><td>4 biến thể của 1 symbol đã ưng</td><td class="plain">img2img: <code>Load Image</code> → <code>VAE Encode</code> → KSampler</td><td class="plain">denoise 0.35–0.55</td></tr>
+                <tr><td>Sửa 1 chỗ hỏng (viền, mắt rồng)</td><td class="plain">Inpaint: vẽ mask → <code>InpaintModelConditioning</code></td><td class="plain">Mask rộng hơn chỗ hỏng một chút</td></tr>
+                <tr><td>Đổi màu, vật liệu, giữ nguyên hình</td><td class="plain">FLUX.2 klein edit: “change the gem from red to emerald green, keep the gold frame identical”</td><td class="plain">Cách nhanh nhất trên Mac</td></tr>
+                <tr><td>Bộ Low symbol A K Q J 10</td><td class="plain">Giữ seed và khung ControlNet, chỉ đổi chữ cái và màu trong prompt</td><td class="plain">Cùng seed thì cả bộ đồng đều</td></tr>
+                <tr><td>Mở rộng nền ra 9:16</td><td class="plain">Outpaint: mở rộng ảnh ra ngoài khung</td><td class="plain">Giữ vùng giữa đơn giản cho reel</td></tr>
+              </tbody>
+            </table></div></div></details></li>
+
+          <li><details class="step" id="w5"><summary><span class="sid">W5</span><span class="stitle">Tách nền</span><span class="smodel">LayerDiffuse hoặc BiRefNet / BEN2</span></summary><div class="step-body">
+            <ul>
+              <li><strong>Cách 1, sinh thẳng ảnh trong suốt:</strong> LayerDiffuse (chỉ SDXL). Viền sạch nhất vì không phải cắt.</li>
+              <li><strong>Cách 2, sinh trên nền phẳng rồi cắt:</strong></li>
+            </ul>
+            <ol class="chain"><li><code>ComfyUI-RMBG (BiRefNet / BEN2)</code></li><li><code>ImageAlphaCrop</code></li><li><code>ImageScale</code></li></ol>
+            <ul>
+              <li>Sinh trên nền xám trung tính hoặc màu tương phản. Không dùng nền trắng khi symbol có viền vàng sáng.</li>
+              <li>Đặt ngưỡng mask thấp để giữ viền đen (outline).</li>
+              <li>Luôn lưu PNG, không lưu JPG. Kiểm tra trên nền tối để thấy viền halo trắng còn sót.</li>
+            </ul></div></details></li>
+
+          <li><details class="step" id="w6"><summary><span class="sid">W6</span><span class="stitle">Upscale rồi thu nhỏ</span><span class="smodel">UltimateSDUpscale</span></summary><div class="step-body">
+            <p><strong>Quy tắc studio: sinh to, thu nhỏ sau.</strong> Model được train ở độ phân giải cao, sinh thẳng ảnh nhỏ sẽ ra bệt. Chỉ upscale ảnh đã chọn và đã sạch lỗi.</p>
+            <ol class="chain"><li><code>Ảnh 1024</code></li><li><code>UltimateSDUpscale ×2 (denoise 0.2–0.3)</code></li><li><code>Paintover</code></li><li><code>ImageScale về 512 / 256</code></li></ol>
+            <p>Test ở kích thước thật: symbol hiển thị khoảng 120–200px trên điện thoại.</p></div></details></li>
+
+          <li><details class="step" id="w-paint"><summary><span class="sid">P</span><span class="stitle">Paintover, chữ và số</span><span class="smodel">Krita AI Diffusion, Photoshop, Figma</span></summary><div class="step-body">
+            <ul>
+              <li>Sửa tay những gì AI làm chưa tới: viền, ánh sáng, chi tiết nhỏ.</li>
+              <li>Chữ WILD, BIG WIN, số tiền, logo: set font tay trong Figma hoặc Photoshop, không để AI vẽ.</li>
+            </ul></div></details></li>
+
+          <li><details class="step" id="w7"><summary><span class="sid">W7</span><span class="stitle">Chạy hàng loạt và đặt tên</span><span class="smodel">Wildcard, Easy-Use, API</span></summary><div class="step-body">
+            <div class="tbl"><table>
+              <thead><tr><th>Mức</th><th>Cách</th></tr></thead>
+              <tbody>
+                <tr><td>Cơ bản</td><td class="plain">Cú pháp <code>{ruby|emerald|sapphire}</code> trong prompt: mỗi lần chạy chọn ngẫu nhiên 1 lựa chọn. Bấm Run nhiều lần</td></tr>
+                <tr><td>Trung bình</td><td class="plain">Wildcard (Impact Pack) hoặc vòng lặp (Easy-Use). <code>filename_prefix</code> theo quy ước ở <a href="#dat-ten">mục 14</a></td></tr>
+                <tr><td>Nâng cao</td><td class="plain"><em>Workflow → Export (API)</em> ra JSON. Script gọi API local của ComfyUI (bản Desktop mặc định cổng 8000), đọc CSV danh sách asset, ghi lại prompt và seed từng ảnh. Claude viết được script này, phải hỏi trước khi chạy</td></tr>
+              </tbody>
+            </table></div>
+            <p><strong>Ví dụ thật:</strong> <a href="https://github.com/kogap1/aigc-asset-pipeline" target="_blank" rel="noopener">kogap1/aigc-asset-pipeline</a> dùng agent biến yêu cầu thành prompt có cấu trúc, gọi ComfyUI qua API, lọc ảnh bằng CLIP-Score (dưới ngưỡng thì đổi seed chạy lại, tối đa 3 lần), rồi upscale và lưu <code>manifest.json</code> để chạy tiếp được nếu bị ngắt. Kết quả: 600 ảnh trong 2.29 giờ trên 1 máy, 91.3% đạt ngay lần đầu. Repo chưa ghi license, chỉ đọc để học, không copy code dùng cho khách.</p></div></details></li>
+        </ol>
+      </div>
+
+      <div id="tab-types" hidden>
+        <div class="recipe">
+          <h4>Symbol: coin, gem, fruit, card, wild, scatter</h4>
+          <ol class="chain"><li><code>Load model</code></li><li><code>Prompt +/−</code></li><li><code>Empty Latent 1024×1024</code></li><li><code>KSampler</code></li><li><code>VAE Decode</code></li><li><code>Tách nền</code></li><li><code>Save Image</code></li></ol>
+          <ul><li>Một symbol mỗi ảnh, nền xám trung tính, không chữ, số, logo.</li><li>Giữ seed khi cần cùng bố cục. Sinh 8–20 phương án mỗi đợt.</li><li>Cần cùng tâm và kích thước thì thêm khung ControlNet (W3).</li></ul>
+        </div>
+        <div class="recipe">
+          <h4>Background theo theme</h4>
+          <ol class="chain"><li><code>Load model</code></li><li><code>Prompt</code></li><li><code>ControlNet Depth / Canny (tùy chọn)</code></li><li><code>Empty Latent 1024×1536</code></li><li><code>KSampler</code></li><li><code>VAE Decode</code></li><li><code>Upscale</code></li><li><code>Save Image</code></li></ol>
+          <ul><li>Chừa vùng trung tâm cho reel, tránh chi tiết dày ở vùng UI.</li><li>Kiểm soát ánh sáng để symbol nổi bật. Sinh nhiều phương án trước khi upscale.</li><li>Cần 9:16 thì outpaint mở rộng, cần chừa reel thì inpaint vùng giữa.</li></ul>
+        </div>
+        <div class="recipe">
+          <h4>Khung UI, khung reel, nút</h4>
+          <ol class="chain"><li><code>Sketch / Figma export</code></li><li><code>Load Image</code></li><li><code>ControlNet Canny</code></li><li><code>Load model + Prompt</code></li><li><code>KSampler</code></li><li><code>Inpaint chi tiết</code></li><li><code>Upscale</code></li><li><code>Save Image</code></li></ol>
+          <ul><li>Không để AI tạo chữ hoặc số. Dùng ControlNet để giữ hình khối UI.</li><li>Khung reel: vẽ lưới 5×3 trong Figma làm khung.</li><li>Export PNG có padding an toàn.</li></ul>
+        </div>
+        <div class="recipe">
+          <h4>Mascot, nhân vật</h4>
+          <ol class="chain"><li><code>Ảnh tham chiếu</code></li><li><code>IPAdapter / FLUX.2 klein reference</code></li><li><code>Load model + LoRA nhân vật</code></li><li><code>Prompt</code></li><li><code>ControlNet Pose / Depth</code></li><li><code>KSampler</code></li><li><code>Inpaint mặt, tay</code></li><li><code>Upscale</code></li><li><code>Save Image</code></li></ol>
+          <ul><li>Tách nhân vật khỏi nền. Giữ cùng bảng màu và tỉ lệ cơ thể.</li><li>Nhiều pose nhưng cùng một nhân vật. Sửa mặt và tay bằng inpaint.</li></ul>
+        </div>
+        <div class="recipe">
+          <h4>Dọn lỗi và nâng chất lượng</h4>
+          <ol class="chain"><li><code>Load Image</code></li><li><code>Mask vùng lỗi</code></li><li><code>Inpaint</code></li><li><code>Upscale</code></li><li><code>Chỉnh màu, chi tiết</code></li><li><code>Save Image (PNG)</code></li></ol>
+          <ul><li>Không upscale ảnh chưa sạch. Kiểm tra viền, texture, độ đối xứng, artifact.</li></ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec col" id="cau-truc-prompt">
+      <div class="sec-h"><span class="num">12</span><h2>Cấu trúc prompt theo tình huống</h2></div>
+      <p class="lead">Mỗi model đọc prompt theo cách khác nhau, và mỗi loại việc cần một khung khác nhau. Mục này cho công thức của từng model, rồi 10 tình huống hay gặp, mỗi tình huống có ví dụ đánh số theo đúng từng phần của công thức.</p>
+
+      <h3>4 nguyên tắc dùng cho mọi model</h3>
+      <ul>
+        <li><strong>Quan trọng nhất đặt trước.</strong> FLUX.2 và SDXL chú ý phần đầu prompt nhiều hơn. Câu đầu luôn là loại asset và chủ thể.</li>
+        <li><strong>Cụ thể thay vì khen chung chung.</strong> “a beautiful gem” không cho model biết vẽ gì. “a faceted ruby with a bright highlight on the top-left facet” thì có.</li>
+        <li><strong>Tả điều muốn có.</strong> Z-Image Turbo, FLUX.2, Nano Banana, GPT Image không dùng prompt âm. Viết “on a plain flat gray background” thay vì “no clutter”. Ràng buộc ngắn như “No text.” để cuối cùng.</li>
+        <li><strong>Giữ khung, chỉ thay biến.</strong> Làm một bộ asset thì giữ nguyên cả câu, chỉ thay phần chủ thể hoặc màu. Đó là cách rẻ nhất để cả bộ đồng đều.</li>
+      </ul>
+
+      <h3>Công thức theo model</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>Model</th><th>Thứ tự các phần</th><th>Prompt âm</th><th>Độ dài và mẹo</th></tr></thead>
+        <tbody>
+          <tr><td>Z-Image Turbo</td><td class="plain">Loại ảnh và chủ thể → bố cục → nền, bối cảnh → ánh sáng → style → ràng buộc</td><td class="plain">Không dùng (model không chạy guidance)</td><td class="plain">3–5 ý chính, viết câu văn. Luôn nêu style, nếu không model tự chọn</td></tr>
+          <tr><td>FLUX.2 (klein, Pro)</td><td class="plain">Chủ thể → hành động, tư thế → style → bối cảnh, ánh sáng</td><td class="plain">Không hỗ trợ</td><td class="plain">30–80 từ hợp đa số việc. Màu chính xác: “in color #D4AF37” gắn với một vật cụ thể. Chạy hàng loạt: dùng JSON</td></tr>
+          <tr><td>SDXL</td><td class="plain">Chủ thể → chi tiết → bố cục → chất liệu, ánh sáng → style → chất lượng, dạng tag cách nhau bằng dấu phẩy</td><td class="plain">Có, cfg 5–7</td><td class="plain">Nhấn mạnh bằng <code>(từ:1.2)</code> trong ComfyUI. Tăng nhẹ 1.1–1.3, quá cao ảnh dễ vỡ</td></tr>
+          <tr><td>Sửa ảnh (FLUX.2 klein, Qwen-Image-Edit, GPT Image, Nano Banana)</td><td class="plain">Động từ → đối tượng cần đổi → thay đổi cụ thể → câu giữ nguyên</td><td class="plain">Qwen-Image-Edit: nếu dùng thì 3–6 từ, nhắm đúng lỗi</td><td class="plain">Câu giữ nguyên là phần quan trọng nhất. Viết lệnh sửa, không tả lại cả ảnh</td></tr>
+          <tr><td>GPT Image 2</td><td class="plain">Bối cảnh → chủ thể → chi tiết → ràng buộc. Nêu mục đích ngay đầu (game asset, UI mockup)</td><td class="plain">Không</td><td class="plain">Chữ đặt trong ngoặc kép kèm font, màu, vị trí. Nền trong suốt bằng tham số API, không tả nền trong prompt</td></tr>
+          <tr><td>Nano Banana (Pro, 2)</td><td class="plain">Chủ thể → hành động → bối cảnh → bố cục → style. Có ảnh mẫu: ảnh và vai trò từng ảnh → quan hệ → tình huống mới</td><td class="plain">Không, tả khẳng định</td><td class="plain">Mở đầu bằng động từ rõ ràng. Sửa bằng hội thoại, mỗi lần nhắc lại điều cần giữ</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>10 tình huống, có ví dụ</h3>
+      <p class="count">Rê chuột (hoặc chạm) vào một phần của công thức để thấy phần tương ứng trong ví dụ.</p>
+      <div class="sit-tabs" id="sitTabs" role="group" aria-label="Chọn tình huống"></div>
+      <div class="panel" id="sitPanel" style="--pc:var(--w-cond)" aria-live="polite"></div>
+    </section>
+
+    <section class="sec col" id="prompt">
+      <div class="sec-h"><span class="num">13</span><h2>Tạo prompt</h2></div>
+      <p class="lead">Chọn loại asset và model, điền theme và vật thể, rồi sao chép. Mẫu gốc lấy từ cả 2 tài liệu, khung câu theo công thức ở <a href="#cau-truc-prompt">mục 12</a>.</p>
+      <div class="panel" style="--pc:var(--w-cond)">
+        <div class="pb-grid">
+          <div class="field"><label for="pbAsset">Loại asset</label><select class="select" id="pbAsset"></select></div>
+          <div class="field"><label for="pbModel">Model</label>
+            <select class="select" id="pbModel">
+              <option value="nat">Z-Image Turbo / FLUX.2 (câu văn)</option>
+              <option value="tag">SDXL (chuỗi tag)</option>
+            </select></div>
+          <div class="field" data-f="theme"><label for="pbTheme">Theme</label><input class="input" id="pbTheme" value="Egyptian"></div>
+          <div class="field" data-f="object"><label for="pbObject" id="pbObjectLabel">Vật thể</label><input class="input" id="pbObject"></div>
+          <div class="field" data-f="material"><label for="pbMaterial">Màu / chất liệu</label><input class="input" id="pbMaterial"></div>
+        </div>
+        <div class="callout bad pb-warn" id="pbWarn">Không đưa tên studio hay game thật vào prompt (kiểu “in the style of …”). Không làm logo operator thật.</div>
+        <div class="out-label"><span>Prompt</span><button class="btn small copy" data-copy="pbOut">Sao chép</button></div>
+        <div class="code"><pre id="pbOut"></pre></div>
+        <div id="pbNegWrap">
+          <div class="out-label"><span>Prompt âm</span><button class="btn small copy" data-copy="pbNeg">Sao chép</button></div>
+          <div class="code"><pre id="pbNeg"></pre></div>
+        </div>
+        <p class="count" id="pbNote" style="margin:0"></p>
+      </div>
+      <h4>Quy tắc viết</h4>
+      <ul>
+        <li>Một vật thể mỗi ảnh. Ghi rõ góc nhìn (<code>front view</code>, <code>three-quarter view</code>) và nguồn sáng.</li>
+        <li>Luôn có “no text”: chữ và số set tay sau.</li>
+        <li>Đổi một thứ mỗi lần chạy: seed, prompt, LoRA, cfg hoặc ControlNet. Lưu lại prompt và setting của phương án đẹp.</li>
+      </ul>
+    </section>
+
+    <section class="sec col" id="dat-ten">
+      <div class="sec-h"><span class="num">14</span><h2>Đặt tên file và cấu trúc folder</h2></div>
+      <p class="lead">Folder theo theme và loại asset (đặt qua <code>filename_prefix</code> của Save Image). Tên file theo công thức dưới.</p>
+      <div class="panel" style="--pc:var(--w-image)">
+        <div class="pb-grid">
+          <div class="field"><label for="nGame">Game</label><input class="input" id="nGame" value="slot"></div>
+          <div class="field"><label for="nType">Loại asset</label>
+            <select class="select" id="nType"><option>symbol</option><option>background</option><option>reel</option><option>button</option><option>banner</option><option>mascot</option><option>vfx</option></select></div>
+          <div class="field"><label for="nTheme">Theme</label><input class="input" id="nTheme" value="egypt"></div>
+          <div class="field"><label for="nVar">Biến thể</label><input class="input" id="nVar" value="scarab"></div>
+          <div class="field"><label for="nVer">Version</label><input class="input" id="nVer" type="number" min="1" value="1"></div>
+        </div>
+        <div class="out-label"><span>filename_prefix cho Save Image</span><button class="btn small copy" data-copy="nOut">Sao chép</button></div>
+        <div class="code"><pre id="nOut"></pre></div>
+      </div>
+      <div class="code"><pre id="tree">comfyui_projects/
+├── workflows/     symbol/ background/ ui_frame/ mascot/ cleanup/
+├── references/    style/ layout/ character/
+├── prompts/       symbol.md  background.md  ui_frame.md  mascot.md
+└── output/        egypt/symbol/slot_symbol_egypt_scarab_v01.png</pre><button class="btn small copy" data-copy="tree">Sao chép</button></div>
+      <p class="count">Model nằm trong folder <code>models/</code> của ComfyUI, không để trong folder dự án. Xem bảng ở <a href="#mac">mục 6</a>.</p>
+    </section>
+
+    <section class="sec col" id="qa">
+      <div class="sec-h"><span class="num">15</span><h2>Checklist QA</h2></div>
+      <p class="lead">Dùng lại cho từng asset. Xong một asset thì bấm “Làm asset mới” để bỏ chọn hết.</p>
+      <div class="tools"><span class="count" id="qaCount"></span><button class="btn small" id="qaReset">Làm asset mới</button></div>
+      <div class="panel" style="--pc:var(--w-mask)">
+        <h4>Symbol, trước khi duyệt</h4>
+        <ul class="check" id="qa1"></ul>
+        <h4>Trước khi giao file</h4>
+        <ul class="check" id="qa2"></ul>
+      </div>
+    </section>
+
+    <!-- ============================== PHẦN: TRA CỨU ============================== -->
+    <div class="part col">Tra cứu</div>
+
+    <section class="sec col" id="loi">
+      <div class="sec-h"><span class="num">16</span><h2>Lỗi hay gặp</h2></div>
+      <div class="tools">
+        <input class="input" id="errQ" type="search" placeholder="Gõ triệu chứng: ảnh đen, chậm, node đỏ…" aria-label="Tìm lỗi">
+        <div class="seg" id="errSeg" role="group" aria-label="Nhóm lỗi">
+          <button data-g="all" aria-pressed="true">Tất cả</button>
+          <button data-g="mac" aria-pressed="false">Mac</button>
+          <button data-g="new" aria-pressed="false">Người mới</button>
+        </div>
+      </div>
+      <div class="tbl"><table>
+        <thead><tr><th>Triệu chứng</th><th>Nguyên nhân</th><th>Cách sửa</th></tr></thead>
+        <tbody id="errTable"></tbody>
+      </table></div>
+    </section>
+
+    <section class="sec col" id="studio-tq">
+      <div class="sec-h"><span class="num">17</span><h2>Cộng đồng và studio Trung Quốc làm thế nào</h2></div>
+      <div class="callout warn"><b class="t">Nói thật về nguồn</b>Chưa có tài liệu công khai nào của studio slot TQ mô tả trọn pipeline ComfyUI. Studio lớn (Tencent, NetEase) không công bố. Phần dưới ghép từ case game icon/UI công khai, nền tảng TQ và một bài nói ở hội nghị ngành. Quy trình nội bộ thường nằm trong khóa trả phí, nhóm WeChat/DingTalk hoặc video Bilibili.</div>
+
+      <h3>Nền tảng họ dùng</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>Nền tảng</th><th>Vai trò</th><th>Ghi chú</th></tr></thead>
+        <tbody>
+          <tr><td>LiblibAI (liblib.art)</td><td class="plain">Kho model và LoRA lớn nhất TQ, train LoRA online, chạy workflow online</td><td class="plain">Tìm: <code>游戏图标</code> (icon game), <code>UI</code>, <code>宝石</code> (đá quý), <code>金币</code> (coin). Đọc license từng LoRA</td></tr>
+          <tr><td>RunningHub (runninghub.ai)</td><td class="plain">ComfyUI trên cloud (RTX 4090), kho workflow, có API gọi workflow theo ID</td><td class="plain">Cách studio nhỏ chạy hàng loạt không cần GPU. API chỉ có ở gói trả phí</td></tr>
+          <tr><td>TusiArt (tusiart.com)</td><td class="plain">Kho model, có LoRA icon game</td><td class="plain">Trang model ghi chỉ dùng cho học tập cá nhân</td></tr>
+          <tr><td>BizyAir (bizyair.cn)</td><td class="plain">Node cloud chạy model nặng từ ComfyUI local</td><td class="plain">Hợp máy yếu</td></tr>
+          <tr><td>UISDC (uisdc.com)</td><td class="plain">Cộng đồng designer TQ, nhiều bài AIGC cho UI</td><td class="plain"><a href="https://www.uisdc.com/group/563090.html" target="_blank" rel="noopener">Ví dụ workflow icon lông xù</a></td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>6 cách làm đáng học</h3>
+      <ul>
+        <li><strong>Lưới ảnh mẫu để khóa style</strong> (12–20 ảnh, 4×4, 1024px), kèm cụm từ góc nhìn cố định. Sau khi sinh: sửa góc nhìn, thu về 256px, tách nền. Điểm yếu họ thừa nhận: góc nhìn vẫn ngẫu nhiên, style trôi dần khi chạy batch dài.</li>
+        <li><strong>Photoshop và ComfyUI chạy song song:</strong> PS lo layer, mask, màu. ComfyUI lo inpaint và giữ nhân vật nhất quán. Trên Mac có thể thay bằng Krita AI Diffusion.</li>
+        <li><strong>Agent, API và bước lọc tự động</strong> (CLIP-Score, đổi seed chạy lại, manifest để chạy tiếp).</li>
+        <li><strong>Spritesheet từ video:</strong> image-to-video ra clip ngắn, tách keyframe, cho từng frame qua ComfyUI chỉnh style. Với slot, dùng làm tham chiếu animation symbol, chạy trên cloud.</li>
+        <li><strong>Nối ComfyUI với engine:</strong> Unity editor gọi ComfyUI tạo asset rồi import thẳng vào project.</li>
+        <li><strong>Chuyển đổi đội art:</strong> bài nói của Shengtian (盛天网络) 12/2025 về chọn tool, base model mã nguồn mở, style bị đồng nhất và rủi ro bản quyền. Chưa đọc được nguyên văn.</li>
+      </ul>
+
+      <h3>Từ khóa tìm kiếm</h3>
+      <p class="count">Bấm để sao chép.</p>
+      <div class="kws" id="kws"></div>
+      <p>Chỉ dùng workflow công khai khi rõ: model gốc, license, custom node, kích thước output, cách tách nền / symbol / UI. Học nguyên lý từ tài liệu chính thức trước, rồi áp vào quy trình riêng.</p>
+
+      <h3>Khóa học tiếng Trung (bật phụ đề tự động)</h3>
+      <ul>
+        <li><a href="https://comfy.org/zh-CN/learning/basics/" target="_blank" rel="noopener">comfy.org: khóa cơ bản chính thức, bản tiếng Trung</a>, 5 bài: node graph, txt2img/img2img, LoRA/ControlNet, inpaint/upscale, video.</li>
+        <li><a href="https://www.bilibili.com/video/av429017897/" target="_blank" rel="noopener">Bilibili: series ComfyUI của Qiuye (秋叶)</a>. Gói cài chỉ cho Windows, trên Mac chỉ xem phần giảng.</li>
+        <li><a href="https://www.bilibili.com/read/cv48964460" target="_blank" rel="noopener">Bilibili: học ComfyUI có hệ thống cho người mới (2026)</a></li>
+        <li><a href="https://www.bilibili.com/opus/984113372778725401" target="_blank" rel="noopener">Bilibili: dựng workflow, gom dây, giải phẫu workflow phức tạp</a></li>
+        <li><a href="https://comfyui-wiki.com/" target="_blank" rel="noopener">ComfyUI Wiki</a>: tra node và tin model mới, có tiếng Trung và tiếng Anh.</li>
+      </ul>
+    </section>
+
+    <section class="sec col src" id="nguon">
+      <div class="sec-h"><span class="num">18</span><h2>Nguồn tham khảo</h2></div>
+      <h4>Chính thức (ComfyUI)</h4>
+      <ul>
+        <li><a href="https://docs.comfy.org/" target="_blank" rel="noopener">Tài liệu ComfyUI</a>: <a href="https://docs.comfy.org/basic-concepts/workflow" target="_blank" rel="noopener">workflow, node, link</a>, <a href="https://docs.comfy.org/basic-concepts/nodes" target="_blank" rel="noopener">kiểu node</a>, <a href="https://docs.comfy.org/basic-concepts/models" target="_blank" rel="noopener">model, LoRA, VAE</a></li>
+        <li><a href="https://docs.comfy.org/installation/desktop/macos" target="_blank" rel="noopener">Cài ComfyUI Desktop trên macOS</a>, <a href="https://docs.comfy.org/installation/manual_install" target="_blank" rel="noopener">cài thủ công</a>, <a href="https://docs.comfy.org/troubleshooting/overview" target="_blank" rel="noopener">xử lý sự cố</a></li>
+        <li><a href="https://docs.comfy.org/get_started/first_generation" target="_blank" rel="noopener">Ảnh đầu tiên</a>, <a href="https://docs.comfy.org/tutorials/basic/text-to-image" target="_blank" rel="noopener">text-to-image</a>, <a href="https://docs.comfy.org/tutorials/basic/image-to-image" target="_blank" rel="noopener">image-to-image</a></li>
+        <li><a href="https://docs.comfy.org/built-in-nodes/KSampler" target="_blank" rel="noopener">KSampler</a>, <a href="https://docs.comfy.org/development/comfyui-server/startup-flags" target="_blank" rel="noopener">startup flags</a>, <a href="https://docs.comfy.org/interface/settings/server-config" target="_blank" rel="noopener">Server-Config (Desktop)</a></li>
+        <li>Model: <a href="https://docs.comfy.org/tutorials/image/z-image/z-image-turbo" target="_blank" rel="noopener">Z-Image Turbo</a>, <a href="https://docs.comfy.org/tutorials/flux/flux-2-klein" target="_blank" rel="noopener">FLUX.2 klein</a>, <a href="https://docs.comfy.org/tutorials/image/qwen/qwen-image-edit" target="_blank" rel="noopener">Qwen-Image-Edit</a>, <a href="https://docs.comfy.org/tutorials/image/qwen/qwen-image-layered" target="_blank" rel="noopener">Qwen-Image-Layered</a></li>
+        <li>Khóa học: <a href="https://comfy.org/learning/basics/" target="_blank" rel="noopener">Learning Basics</a>, <a href="https://comfy.org/learning/basics/loras-style-transfer-controlnets" target="_blank" rel="noopener">LoRA, style transfer, ControlNet</a>, <a href="https://comfy.org/learning/basics/inpainting-outpainting-upscaling" target="_blank" rel="noopener">inpaint, outpaint, upscale</a></li>
+        <li><a href="https://comfy.org/hub/workflows/" target="_blank" rel="noopener">Workflow Hub</a>, <a href="https://comfyanonymous.github.io/ComfyUI_examples/" target="_blank" rel="noopener">ComfyUI Examples</a>, <a href="https://github.com/comfy-org/comfyui" target="_blank" rel="noopener">GitHub</a></li>
+      </ul>
+      <h4>Workflow thực hành</h4>
+      <ul>
+        <li><a href="https://comfyui.dev/workflows/" target="_blank" rel="noopener">ComfyUI Dev: workflow có giải thích từng node</a></li>
+        <li><a href="https://github.com/yaiol/ComfyUI-Workflows" target="_blank" rel="noopener">yaiol/ComfyUI-Workflows</a>: image-to-image, inpaint, upscale</li>
+        <li><a href="https://github.com/LingyiChen-AI/comfyui-workflow-skill" target="_blank" rel="noopener">comfyui-workflow-skill</a>: template SD1.5 / SDXL / FLUX</li>
+      </ul>
+      <h4>Mac / Apple Silicon</h4>
+      <ul>
+        <li><a href="https://lilting.ch/en/articles/comfyui-qwen-mps-bf16-slowdown" target="_blank" rel="noopener">Qwen Image Edit chậm 7 lần trên Mac vì BF16</a></li>
+        <li><a href="https://lilting.ch/en/articles/boogu-image-m1-max-comfyui" target="_blank" rel="noopener">Model 10B trên M1 Max: lỗi fp8, thời gian từng ảnh</a></li>
+        <li><a href="https://github.com/apple/ml-stable-diffusion" target="_blank" rel="noopener">Benchmark Core ML của Apple</a></li>
+      </ul>
+      <h4>Chọn model và license (blog tổng hợp, cần đối chiếu model card)</h4>
+      <ul>
+        <li><a href="https://www.tutorial3d.it/en/ai-artificial-intelligence/comfyui-image-models-guide/" target="_blank" rel="noopener">tutorial3d.it: model cho ComfyUI 2026 kèm license</a></li>
+        <li><a href="https://vdf.ai/blog/best-local-image-generation-models/" target="_blank" rel="noopener">vdf.ai: model chạy local, RAM cho Mac</a></li>
+        <li><a href="https://github.com/QwenLM/Qwen-Image-Layered" target="_blank" rel="noopener">Qwen-Image-Layered</a>, <a href="https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/tree/main" target="_blank" rel="noopener">FLUX.2 klein 4B trên Hugging Face</a></li>
+      </ul>
+      <h4>Case game asset</h4>
+      <ul>
+        <li><a href="https://www.trilightlab.com/2026/09/10/ai-%E6%B8%B8%E6%88%8F%E5%9B%BE%E6%A0%87%E6%89%B9%E9%87%8F%E7%94%9F%E4%BA%A7%E5%B7%A5%E4%BD%9C%E6%B5%81%EF%BC%9Acomfyui-gpt-image-2-%E5%A4%9A%E8%A7%92%E5%BA%A6%E7%9B%B8%E6%9C%BA/" target="_blank" rel="noopener">TrilightLabs: pipeline icon game hàng loạt (tiếng Trung)</a></li>
+        <li><a href="https://github.com/kogap1/aigc-asset-pipeline" target="_blank" rel="noopener">kogap1/aigc-asset-pipeline</a></li>
+        <li><a href="https://zhuanlan.zhihu.com/p/1966420000517656707" target="_blank" rel="noopener">Zhihu: spritesheet cho studio Ấn Độ</a>, <a href="https://zhuanlan.zhihu.com/p/2065758389444014920" target="_blank" rel="noopener">Zhihu: Photoshop + ComfyUI</a></li>
+        <li><a href="https://adg.csdn.net/6973105d437a6b40336b7b0c.html" target="_blank" rel="noopener">CSDN: ComfyUI + Unity</a>, <a href="https://gitcode.csdn.net/69e97f7d0a2f6a37c5a1b94f.html" target="_blank" rel="noopener">CSDN: dev tự làm art game bằng AI</a></li>
+        <li><a href="http://www.gamelook.com.cn/2025/12/584645/" target="_blank" rel="noopener">GameLook: Shengtian chuyển đổi đội art (12/2025)</a></li>
+        <li><a href="https://aigaming.nuilab.org/workflows/sprites/" target="_blank" rel="noopener">nuilab: sinh sprite, quy tắc sinh to thu nhỏ</a></li>
+      </ul>
+      <h4>Cấu trúc prompt (bổ sung 11/2026)</h4>
+      <ul>
+        <li><a href="https://docs.bfl.ai/guides/prompting_guide_flux2" target="_blank" rel="noopener">BFL: hướng dẫn prompt FLUX.2</a> (công thức chủ thể + hành động + style + bối cảnh, mã màu hex, JSON)</li>
+        <li><a href="https://fal.ai/learn/devs/z-image-turbo-prompt-guide" target="_blank" rel="noopener">fal: hướng dẫn prompt Z-Image Turbo</a></li>
+        <li><a href="https://developers.openai.com/cookbook/examples/multimodal/image-gen-models-prompting-guide" target="_blank" rel="noopener">OpenAI Cookbook: prompt cho GPT Image</a> (thứ tự bối cảnh → chủ thể → chi tiết → ràng buộc, sửa ảnh, nền trong suốt)</li>
+        <li><a href="https://cloud.google.com/blog/products/ai-machine-learning/ultimate-prompting-guide-for-nano-banana" target="_blank" rel="noopener">Google Cloud: hướng dẫn prompt Nano Banana</a></li>
+        <li><a href="https://docs.comfy.org/tutorials/image/qwen/qwen-image-edit" target="_blank" rel="noopener">ComfyUI: Qwen-Image-Edit</a>, <a href="https://deapi.ai/blog/qwen-image-edit-plus-prompting-guide-how-to-write-edit-instructions-that-actually-work" target="_blank" rel="noopener">deAPI: viết lệnh sửa cho Qwen-Image-Edit</a></li>
+        <li><a href="https://invoke.ai/concepts/prompt-syntax/" target="_blank" rel="noopener">InvokeAI: cú pháp trọng số prompt SD/SDXL</a></li>
+      </ul>
+      <h4>Top 10 model (bổ sung 11/2026)</h4>
+      <ul>
+        <li><a href="https://vibedex.ai/blog/best-ai-image-generator-game-art-2026" target="_blank" rel="noopener">VibeDex: 18 model cho game art, cập nhật 05/2026</a></li>
+        <li><a href="https://docs.comfy.org/tutorials/partner-nodes/image/overview" target="_blank" rel="noopener">ComfyUI: danh sách model trong Partner Nodes</a></li>
+        <li><a href="https://blog.google/innovation-and-ai/technology/ai/nano-banana-2/" target="_blank" rel="noopener">Google: Nano Banana 2</a></li>
+        <li><a href="https://the-decoder.com/openais-gpt-image-2-can-now-generate-images-without-a-background/" target="_blank" rel="noopener">The Decoder: GPT Image 2 có nền trong suốt</a></li>
+        <li><a href="https://artlist.io/blog/new-seedream-5-0-announcement/" target="_blank" rel="noopener">Artlist: Seedream 5.0</a></li>
+        <li><a href="https://blog.comfy.org/p/recraft-v4-now-available-in-comfyui" target="_blank" rel="noopener">ComfyUI blog: Recraft V4</a></li>
+        <li><a href="https://docs.midjourney.com/docs/models" target="_blank" rel="noopener">Midjourney: các phiên bản model</a></li>
+        <li><a href="https://www.scenario.com/features/train-model" target="_blank" rel="noopener">Scenario: train model style riêng</a></li>
+        <li><a href="https://www.siliconflow.com/articles/best-open-source-models-for-game-asset-creation" target="_blank" rel="noopener">SiliconFlow: model mã nguồn mở cho game asset</a></li>
+      </ul>
+      <h4>Train LoRA</h4>
+      <ul>
+        <li><a href="https://github.com/ostris/ai-toolkit" target="_blank" rel="noopener">ostris/ai-toolkit</a>, <a href="https://www.runcomfy.com/trainer/ai-toolkit/z-image-turbo-lora-training" target="_blank" rel="noopener">RunComfy: train Z-Image Turbo</a>, <a href="https://www.runcomfy.com/trainer/ai-toolkit/flux-2-klein-lora-training" target="_blank" rel="noopener">RunComfy: train FLUX.2 klein</a></li>
+      </ul>
+      <div class="callout"><b class="t">Còn thiếu, cần tự kiểm chứng</b>
+        <ul>
+          <li>Thời gian thật của Z-Image Turbo và FLUX.2 klein trên M2 Max: chưa có benchmark. Tự đo ở Level 1.</li>
+          <li>Chưa có nguồn công khai về pipeline ComfyUI riêng cho studio slot TQ.</li>
+          <li>Chưa đọc được nguyên văn bài GameLook (Shengtian) và bài Zhihu Photoshop + ComfyUI.</li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============================== DRAWER GHI CHÚ ============================== -->
+<div class="scrim" id="nScrim"></div>
+<aside class="drawer" id="drawer" aria-label="Ghi chú" aria-hidden="true">
+  <div class="drawer-h"><h2>Ghi chú</h2><button class="btn small" id="drawerClose">Đóng</button></div>
+  <p class="count" style="margin:0">Ghi chú tự lưu trên trình duyệt này. Xuất ra file .md để cất vào vault, vì xóa dữ liệu trình duyệt là mất.</p>
+  <div class="field"><label for="genNote">Ghi chú chung</label><textarea id="genNote" data-note="general" placeholder="Ý tưởng, câu hỏi, link workflow hay…"></textarea></div>
+  <div class="saved" data-saved-for="general"></div>
+  <div class="row">
+    <button class="btn primary" id="exportBtn">Xuất tiến độ và ghi chú (.md)</button>
+  </div>
+  <div class="row">
+    <button class="btn small" id="resetBtn">Xóa toàn bộ tiến độ và ghi chú</button>
+  </div>
+</aside>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ============================================================
+   DỮ LIỆU
+   ============================================================ */
+const TYPES = [
+  { k:"MODEL",        v:"--w-model",  what:"Model gỡ nhiễu (có thể đã được LoRA hay IPAdapter sửa)", flow:"Loader → KSampler" },
+  { k:"CLIP",         v:"--w-clip",   what:"Text encoder", flow:"Loader → CLIP Text Encode" },
+  { k:"CONDITIONING", v:"--w-cond",   what:"Prompt đã mã hóa, kèm điều kiện phụ (ControlNet, ảnh tham chiếu)", flow:"Text Encode → KSampler" },
+  { k:"LATENT",       v:"--w-latent", what:"Ảnh dạng nén, đang hoặc đã gỡ nhiễu", flow:"Empty Latent hoặc VAE Encode → KSampler → VAE Decode" },
+  { k:"VAE",          v:"--w-vae",    what:"Bộ nén và giải nén", flow:"Loader → VAE Encode / Decode" },
+  { k:"IMAGE",        v:"--w-image",  what:"Ảnh pixel thật", flow:"VAE Decode, Load Image → Save, Upscale, tách nền" },
+  { k:"MASK",         v:"--w-mask",   what:"Vùng chọn đen trắng", flow:"Load Image (kênh alpha), tách nền → inpaint, ghép ảnh" },
+];
+
+/* Dây trong sơ đồ: [cổng ra, cổng vào, kiểu dữ liệu] */
+const WIRES = [
+  ["load-model","ks-model","MODEL"], ["load-clip","text-clip","CLIP"],
+  ["text-cond","ks-pos","CONDITIONING"], ["text-cond","ks-neg","CONDITIONING"],
+  ["lat-out","ks-lat","LATENT"], ["ks-out","dec-lat","LATENT"],
+  ["load-vae","dec-vae","VAE"], ["dec-img","save-img","IMAGE"],
+];
+
+const NODES = {
+  load:{ t:"Load model: nạp model", a:"Chọn họa sĩ sẽ vẽ.", body:`
+    <ul><li><strong>SDXL:</strong> 1 file checkpoint qua <code>Load Checkpoint</code>, ra cả MODEL, CLIP, VAE.</li>
+    <li><strong>Z-Image, FLUX.2, Qwen:</strong> 3 file riêng, nạp bằng <code>Load Diffusion Model</code>, <code>Load CLIP</code>, <code>Load VAE</code>.</li>
+    <li>Trên Mac: <code>weight_dtype</code> không chọn fp8. <code>Load CLIP</code> phải đúng <code>type</code> của họ model (template đã chọn sẵn).</li></ul>` },
+  text:{ t:"CLIP Text Encode: mã hóa prompt", a:"Viết brief cho họa sĩ.", body:`
+    <ul><li>Thường có 2 node: <strong>dương</strong> (muốn gì) và <strong>âm</strong> (không muốn gì).</li>
+    <li>Model distilled chạy cfg = 1 thì prompt âm bị bỏ qua: ghi điều không muốn thẳng vào prompt dương, ví dụ “No text.”</li></ul>` },
+  lat:{ t:"Empty Latent Image: tờ giấy nhiễu", a:"Chuẩn bị tờ giấy để vẽ.", body:`
+    <ul><li><code>width</code>, <code>height</code>: symbol 1024×1024, nền dọc 1024×1536, nền ngang 1536×1024.</li>
+    <li><code>batch_size</code>: số ảnh mỗi lần chạy. Máy chậm thì để 1.</li>
+    <li>Model mới có biến thể riêng như <code>EmptySD3LatentImage</code>, template đã chọn sẵn.</li></ul>` },
+  ks:{ t:"KSampler: gỡ nhiễu", a:"Họa sĩ bắt đầu vẽ, từng nét một.", body:`
+    <p>Nhận model, prompt dương, prompt âm và latent, gỡ nhiễu qua nhiều bước rồi trả ra latent đã vẽ xong. 7 tham số giải thích ở <a href="#ksampler">mục 3</a>.</p>` },
+  dec:{ t:"VAE Decode: giải mã", a:"In tranh từ bản nháp ẩn ra giấy.", body:`
+    <ul><li>Đổi latent thành ảnh pixel. <code>VAE Encode</code> làm chiều ngược lại, dùng cho img2img.</li>
+    <li>Dùng đúng VAE của họ model. Sai VAE sẽ ra màu bệt hoặc nhiễu.</li></ul>` },
+  save:{ t:"Save Image: lưu ảnh", a:"Cất tranh vào tủ.", body:`
+    <ul><li>File PNG chứa luôn workflow và seed. Kéo PNG vào canvas là mở lại được.</li>
+    <li><code>filename_prefix</code> tạo được subfolder, ví dụ <code>egypt/symbol/slot_symbol_egypt_scarab_v01</code>.</li>
+    <li><code>Preview Image</code> chỉ xem, không lưu.</li></ul>` },
+};
+
+const KS = [
+  { p:"seed", what:"Số khởi tạo nhiễu. Cùng seed và cùng mọi thứ khác thì ra cùng ảnh", z:"randomize → fixed", f:"randomize → fixed", s:"randomize → fixed", tip:"Tìm style thì để randomize. Ưng một ảnh thì chuyển sang fixed rồi mới chỉnh prompt" },
+  { p:"steps", what:"Số bước gỡ nhiễu", z:"Theo template (khoảng 8)", f:"Theo template (khoảng 4)", s:"25–35", tip:"Model Turbo/distilled được train cho ít bước. Tăng thêm không đẹp hơn, có khi tệ hơn" },
+  { p:"cfg", what:"Mức nghe lời prompt so với để model tự do", z:"1", f:"Theo template (bản distilled: 1)", s:"5–7", tip:"cfg = 1 thì prompt âm bị bỏ qua, chạy nhanh gần gấp đôi. cfg quá cao thì màu gắt, viền cháy" },
+  { p:"sampler_name", what:"Thuật toán của mỗi bước", z:"Giữ như template", f:"Giữ như template", s:"dpmpp_2m (hoặc euler)", tip:"euler an toàn, nhanh. Đuôi _ancestral thêm nhiễu mỗi bước, mỗi lần ra khác: tránh khi cần tái lập" },
+  { p:"scheduler", what:"Lịch phân bổ mức nhiễu qua các bước", z:"Giữ như template (simple / normal)", f:"Giữ như template (simple / normal)", s:"karras", tip:"Không cần đổi nếu template đã chạy tốt" },
+  { p:"denoise", what:"Phá ảnh đầu vào bao nhiêu phần", z:"1.0 khi vẽ mới", f:"1.0 khi vẽ mới", s:"1.0 khi vẽ mới", tip:"0.35–0.55: biến thể symbol. 0.15–0.3: đánh bóng sau upscale. Kéo thử ở khung dưới" },
+  { p:"control_after_generate", what:"Seed tự đổi sau mỗi lần chạy hay không", z:"fixed khi so sánh", f:"fixed khi so sánh", s:"fixed khi so sánh", tip:"Để fixed khi so sánh A/B, nếu không mỗi lần chạy seed sẽ khác" },
+];
+const KS_NAMES = { z:"Z-Image Turbo", f:"FLUX.2 klein 4B", s:"SDXL" };
+
+const DICT = [
+  ["Node","Khái niệm","Một khối làm một việc, như một linh kiện","Load Checkpoint là node nạp model"],
+  ["Link (dây)","Khái niệm","Đường nối truyền dữ liệu giữa 2 node","Chỉ nối được 2 cổng cùng kiểu dữ liệu"],
+  ["Workflow","Khái niệm","Toàn bộ sơ đồ node và dây","Lưu dạng .json, hoặc nằm sẵn trong PNG xuất ra"],
+  ["Prompt dương / âm","Khái niệm","Điều muốn có / điều không muốn có","cfg = 1 thì prompt âm bị bỏ qua"],
+  ["Checkpoint","Khái niệm","File model gói cả 3 phần (SDXL)","Model mới tách thành 3 file riêng"],
+  ["LoRA","Khái niệm","“Sổ tay phong cách” cắm thêm vào model: style, vật thể, nhân vật","strength 0.6–1.0. Quá cao thì ảnh cháy style"],
+  ["VAE","Khái niệm","Bộ chuyển giữa latent và ảnh thật","Sai VAE ra màu bệt hoặc nhiễu"],
+  ["Latent","Khái niệm","Bản nháp ẩn, ảnh đã nén nhỏ","KSampler làm việc trên latent"],
+  ["Seed","Tham số","Số ngẫu nhiên quyết định biến thể","Cùng seed và cùng setting thì ra cùng ảnh"],
+  ["Sampler / Scheduler","Tham số","Cách vẽ từng bước / lịch phân bổ nhiễu","Giữ như template với model mới"],
+  ["Steps","Tham số","Số bước gỡ nhiễu","SDXL 25–35. Turbo 4–9"],
+  ["CFG","Tham số","Mức nghe lời prompt","SDXL 5–7. Distilled = 1"],
+  ["Denoise","Tham số","Mức thay đổi ảnh gốc","0.3 sửa nhẹ, 1.0 vẽ mới"],
+  ["Shift","Tham số","Lịch nhiễu của model flow-matching, chỉnh qua ModelSamplingAuraFlow / ModelSamplingSD3","Cao: nhiều bước cho bố cục. Thấp: thiên về chi tiết"],
+  ["Inpainting","Kỹ thuật","Vẽ lại một vùng được chọn","Mask rộng hơn chỗ hỏng một chút"],
+  ["Outpainting","Kỹ thuật","Mở rộng ảnh ra ngoài khung","Mở nền ngang thành 9:16"],
+  ["Upscale","Kỹ thuật","Phóng to và làm nét ảnh","Xong thường cho qua KSampler lại với denoise thấp"],
+  ["ControlNet","Kỹ thuật","Ép ảnh theo khung có sẵn: nét, depth, pose","strength 0.5–0.8, end_percent 0.6–0.8"],
+  ["IPAdapter","Kỹ thuật","Lấy style hoặc bố cục từ ảnh mẫu (SDXL)","Repo chỉ còn bảo trì từ 04/2025"],
+  ["GGUF","Kỹ thuật","Định dạng model nén để chạy model lớn trên máy ít RAM","Q8 hoặc Q5. Nạp qua ComfyUI-GGUF, file để trong models/unet"],
+  ["Load Checkpoint","Node","Nạp file all-in-one (SDXL), ra MODEL, CLIP, VAE","Chọn file"],
+  ["Load Diffusion Model","Node","Nạp phần gỡ nhiễu của model tách file","Trên Mac không chọn fp8 ở weight_dtype"],
+  ["Load CLIP","Node","Nạp text encoder","type phải khớp họ model"],
+  ["Load VAE","Node","Nạp VAE","Dùng đúng VAE của họ model"],
+  ["CLIP Text Encode","Node","Prompt thành CONDITIONING","Thường 2 node: dương và âm"],
+  ["Empty Latent Image","Node","Tạo tờ giấy nhiễu","width, height, batch_size"],
+  ["KSampler","Node","Trái tim: gỡ nhiễu","Xem mục 3"],
+  ["VAE Decode / VAE Encode","Node","Latent ⇄ ảnh","Encode dùng cho img2img"],
+  ["Load Image","Node","Mở ảnh có sẵn (sketch, symbol cũ)","Kênh alpha tự thành MASK"],
+  ["Save Image / Preview Image","Node","Lưu hoặc chỉ xem","filename_prefix tạo được subfolder"],
+  ["LoraLoader / LoraLoaderModelOnly","Node","Cắm LoRA vào MODEL (và CLIP)","strength 0.6–1.0"],
+  ["ControlNet Loader + Apply ControlNet","Node","Ép bố cục theo ảnh khung","strength, start/end_percent"],
+  ["InpaintModelConditioning / Set Latent Noise Mask","Node","Vẽ lại một vùng theo mask","Mask càng sát vùng càng sạch"],
+  ["Upscale Image (using Model)","Node","Phóng to bằng model ESRGAN, đi cùng Load Upscale Model","Sau đó qua KSampler denoise thấp"],
+  ["ImageScale / ImageScaleBy","Node","Đổi kích thước thường, không dùng AI","Thu nhỏ về kích thước giao"],
+  ["Reroute, Group, Note, Primitive, Subgraph","Node","Gom dây, ghi chú, gộp nhiều node thành 1 node tái sử dụng","Subgraph là cách studio đóng gói module"],
+];
+
+/* license: ok / bad / warn ; mac: ok / warn / bad */
+const MODELS = [
+  { n:"Z-Image Turbo", s:"6B, khoảng 8 bước", lic:"ok", licT:"Apache 2.0", mac:"ok", macT:"Tốt nhất để sinh nhanh", use:"Tìm style, symbol, nền. Viết được chữ EN/CN (bản cuối vẫn nên set font tay)" },
+  { n:"Z-Image (base)", s:"6B", lic:"ok", licT:"Apache 2.0", mac:"ok", macT:"Chạy được, chậm hơn Turbo", use:"Train LoRA style, ảnh đa dạng hơn" },
+  { n:"FLUX.2 [klein] 4B", s:"4B, 4 bước (distilled)", lic:"ok", licT:"Apache 2.0", mac:"ok", macT:"Tải bản bf16 flux-2-klein-4b.safetensors (7.75GB), docs chỉ link bản fp8", use:"Sửa ảnh bằng câu lệnh, tham chiếu nhiều ảnh: giữ style cả bộ, đổi màu, đổi vật thể" },
+  { n:"SDXL 1.0 và fine-tune", s:"khoảng 3.5B", lic:"ok", licT:"OpenRAIL++ (mỗi fine-tune có license riêng)", mac:"ok", macT:"Ổn định nhất", use:"LayerDiffuse (nền trong suốt), IPAdapter, ControlNet, kho LoRA game icon lớn nhất" },
+  { n:"Qwen-Image / 2512", s:"20B", lic:"ok", licT:"Apache 2.0", mac:"warn", macT:"Chỉ bản GGUF, chậm", use:"Khi cần chữ chính xác. Thường không đáng: chữ nên set font tay" },
+  { n:"Qwen-Image-Edit 2509 / 2511", s:"20B", lic:"ok", licT:"Apache 2.0", mac:"warn", macT:"Nhiều phút một ảnh", use:"Sửa ảnh mạnh. Trên Mac nên dùng FLUX.2 klein thay" },
+  { n:"Qwen-Image-Layered", s:"20B", lic:"ok", licT:"Apache 2.0", mac:"warn", macT:"Nặng, nên chạy cloud", use:"Tách 1 ảnh thành nhiều layer RGBA: hợp chuẩn bị file cho Spine" },
+  { n:"FLUX.1 dev / Kontext / Krea, FLUX.2 dev, FLUX.2 klein 9B", s:"9–32B", lic:"bad", licT:"Phi thương mại", mac:"bad", macT:"Không hoặc rất chậm", use:"Bỏ qua khi làm cho khách" },
+  { n:"Qwen-Image 2.1", s:"7B + encoder 8B", lic:"bad", licT:"Qwen Research License", mac:"warn", macT:"Chạy được", use:"Xuất được RGBA trực tiếp, nhưng license không dùng được cho khách" },
+];
+
+const ERRORS = [
+  { g:"mac", s:"Trying to convert Float8_e4m3fn to the MPS backend", c:"File fp8", f:"Tải bản bf16/fp16, hoặc GGUF" },
+  { g:"mac", s:"Ảnh ra đen", c:"Cờ fp16 (nhất là VAE) gây tràn số", f:"Bỏ --fp16-vae. Model nào ra đen với fp16 thì để mặc định" },
+  { g:"mac", s:"Đột nhiên chậm gấp nhiều lần sau khi update", c:"Model bị đổi sang chạy bf16 (M2 không có BF16 phần cứng)", f:"Thử UNET fp16. Quay về version cũ đã ghi lại" },
+  { g:"mac", s:"Máy treo, swap nhiều", c:"Vượt khoảng 25GB bộ nhớ", f:"Giảm batch_size, giảm độ phân giải, đóng app khác, dùng GGUF Q5/Q4" },
+  { g:"mac", s:"Node đỏ khi mở workflow", c:"Thiếu custom node, hoặc node chỉ chạy CUDA", f:"Manager → Install Missing. Node CUDA thì tìm node thay thế" },
+  { g:"mac", s:"Model không hiện trong danh sách", c:"Sai folder", f:"Z-Image/FLUX.2: diffusion_models, text_encoders, vae. ControlNet của Z-Image: model_patches. GGUF: unet" },
+  { g:"mac", s:"Ảnh màu bệt, xám", c:"Sai VAE, hoặc cfg quá thấp với model không distilled", f:"Dùng đúng VAE của template, kiểm tra cfg" },
+  { g:"new", s:"Ảnh không theo prompt", c:"cfg quá thấp, prompt mơ hồ", f:"Tăng cfg nhẹ (với model không distilled), viết prompt cụ thể hơn" },
+  { g:"new", s:"Ảnh quá bão hòa, nhiều artifact", c:"cfg quá cao, hoặc steps quá ít với SDXL", f:"Giảm cfg, tăng steps (SDXL). Model Turbo thì giữ số bước của template" },
+  { g:"new", s:"Bộ asset không đồng bộ", c:"Đổi seed, LoRA, prompt cùng lúc", f:"Mỗi lần chỉ đổi một biến. Khóa style (W2)" },
+  { g:"new", s:"Background quá chi tiết, không có chỗ cho reel", c:"Prompt không chừa vùng UI", f:"Ghi rõ vùng giữa tối và đơn giản, dùng ControlNet hoặc inpaint vùng giữa" },
+  { g:"new", s:"Chữ, số bị sai", c:"Dùng diffusion để vẽ chữ", f:"Set chữ bằng Figma hoặc Photoshop" },
+  { g:"new", s:"Upscale làm hỏng chi tiết", c:"Upscale quá sớm, hoặc denoise cao", f:"Sửa ảnh trước, upscale sau, denoise 0.2–0.3" },
+  { g:"new", s:"Workflow báo lỗi khi chạy", c:"Sai kết nối hoặc thiếu model", f:"Dò theo màu dây vào/ra, kiểm tra từng loader" },
+  { g:"new", s:"Viền trắng (halo) quanh symbol", c:"Sinh trên nền trắng rồi tách nền", f:"Sinh trên nền xám trung tính, ngưỡng mask thấp, kiểm tra trên nền tối" },
+];
+
+const QA1 = [
+  ["qa-sil","Tô đen toàn bộ symbol, thu về 64px: vẫn có hình dáng riêng"],
+  ["qa-light","Nguồn sáng cố định cho cả bộ (ví dụ trên-trái 45°)"],
+  ["qa-fill","Vật thể chiếm 70–85% khung"],
+  ["qa-out","Viền ngoài khoảng 4px ở cỡ 256px, đồng đều cả bộ"],
+  ["qa-col","Tối đa 3 màu chủ đạo. High symbol rực, Low symbol phẳng hơn"],
+  ["qa-25","Thu về 25% vẫn đọc được. Không có halo khi đặt trên nền tối"],
+  ["qa-seed","Đã lưu prompt, seed và PNG gốc chứa workflow"],
+];
+const QA2 = [
+  ["qa-theme","Đúng theme và art direction"],
+  ["qa-text","Không có chữ, số, logo ngoài ý muốn"],
+  ["qa-art","Không artifact, noise, viền vỡ"],
+  ["qa-bg","Background có vùng trống cho reel và UI"],
+  ["qa-brand","Màu đúng brand, contrast tốt"],
+  ["qa-size","Đúng kích thước, tỉ lệ, PNG, đặt tên đúng quy ước"],
+  ["qa-phone","Đã xem ở kích thước thật trên điện thoại (120–200px)"],
+  ["qa-lic","Đã kiểm tra license model và LoRA trước khi dùng thương mại"],
+];
+
+const LEVELS = [
+  { id:"l0", name:"Setup", hours:"1–2 giờ", out:"Chạy được template Z-Image Turbo và SDXL.",
+    reads:[["#mac","Setup Mac"],["#model","Chọn model"],["#custom-node","Custom node"]],
+    tasks:[
+      ["l0-1","Cài ComfyUI Desktop cho macOS"],
+      ["l0-2","Biết file nào bỏ vào folder nào trong models/"],
+      ["l0-3","Mở Manager, đổi ngôn ngữ giao diện nếu cần, mở menu Templates"],
+      ["l0-4","Mở template Z-Image Turbo, tải model còn thiếu (đổi bản fp8 sang bf16)"],
+      ["l0-5","Chạy được template Z-Image Turbo"],
+      ["l0-6","Chạy được template SDXL"],
+      ["l0-7","Ghi lại version ComfyUI đang chạy ổn"],
+    ]},
+  { id:"l1", name:"Nền tảng", hours:"5 giờ", out:"1 high symbol, 4 biến thể, kèm bảng “tham số → tác dụng” tự ghi.",
+    reads:[["#ban-chat","Mục 1"],["#kieu-du-lieu","Mục 2"],["#ksampler","KSampler"],["#tu-dien","Từ điển"]],
+    tasks:[
+      ["l1-1","Vẽ lại 6 khối lõi và màu dây trên giấy, không nhìn"],
+      ["l1-2","Sinh 1 high symbol bằng Z-Image Turbo"],
+      ["l1-3","Cùng prompt, chạy 5 seed khác nhau"],
+      ["l1-4","Đổi từng tham số KSampler một lần (steps, cfg, sampler, denoise), ghi kết quả"],
+      ["l1-5","Kéo PNG đã lưu vào canvas để mở lại workflow và seed"],
+      ["l1-6","Ra 4 biến thể của symbol bằng img2img (denoise 0.35–0.55)"],
+      ["l1-7","Đo thời gian 1 ảnh Z-Image Turbo trên máy mình, ghi vào ghi chú"],
+      ["l1-8","Bài thêm: 10 coin và 10 gem cùng style, 1 background 9:16"],
+    ]},
+  { id:"l2", name:"Điều khiển", hours:"8 giờ", out:"5 low symbol A K Q J 10 cùng 1 khung silhouette.",
+    reads:[["#w3","W3 ControlNet"],["#w4","W4 Biến thể và sửa"],["#cau-truc-prompt","Cấu trúc prompt"],["#prompt","Tạo prompt"],["#doc-workflow","Đọc workflow"]],
+    tasks:[
+      ["l2-1","Vẽ khung silhouette 1024×1024 trong Figma (vật thể chiếm 70–85%)"],
+      ["l2-2","Cài comfyui_controlnet_aux, chạy ControlNet theo khung"],
+      ["l2-3","Sinh 5 low symbol A K Q J 10: giữ seed và khung, chỉ đổi chữ và màu"],
+      ["l2-4","Inpaint sửa 1 chỗ hỏng (viền, chi tiết)"],
+      ["l2-5","Inpaint đổi màu kim loại của 1 coin"],
+      ["l2-6","Background: inpaint vùng giữa chừa reel, outpaint mở rộng ra 9:16"],
+      ["l2-7","Cắm thử 1 LoRA, so sánh strength 0.6 và 1.0"],
+      ["l2-8","Đọc 1 workflow tải về bằng bài tập 4 dòng"],
+    ]},
+  { id:"l3", name:"Nhất quán", hours:"8 giờ", out:"Bộ 10 symbol cùng style, qua checklist QA.",
+    reads:[["#w2","W2 Khóa style"],["#tab-types","Mascot"],["#qa","Checklist QA"]],
+    tasks:[
+      ["l3-1","Giữ style bằng FLUX.2 klein: 2–4 symbol đã duyệt làm tham chiếu"],
+      ["l3-2","Thử IPAdapter style transfer trên SDXL"],
+      ["l3-3","Ghép lưới 12–20 ảnh mẫu (4×4, 1024px) làm tham chiếu"],
+      ["l3-4","Train thử 1 LoRA trên cloud (15–30 ảnh, 1 trigger word)"],
+      ["l3-5","Mascot: 4 pose cùng một nhân vật"],
+      ["l3-6","Bộ 10 symbol cùng style, chạy qua checklist QA"],
+    ]},
+  { id:"l4", name:"Hậu kỳ và hàng loạt", hours:"6 giờ", out:"Bộ PNG trong suốt, đúng tên file, đúng kích thước.",
+    reads:[["#w5","W5 Tách nền"],["#w6","W6 Upscale"],["#w7","W7 Hàng loạt"],["#dat-ten","Đặt tên"]],
+    tasks:[
+      ["l4-1","Tách nền bằng ComfyUI-RMBG (BiRefNet hoặc BEN2)"],
+      ["l4-2","Thử LayerDiffuse sinh thẳng ảnh trong suốt (SDXL)"],
+      ["l4-3","Cắt viền thừa bằng ImageAlphaCrop, kiểm tra halo trên nền tối"],
+      ["l4-4","Upscale ×2 bằng UltimateSDUpscale (denoise 0.2–0.3), rồi thu nhỏ về 512 / 256"],
+      ["l4-5","Chạy hàng loạt bằng {a|b|c} hoặc wildcard, đặt filename_prefix theo quy ước"],
+      ["l4-6","Gộp 1 cụm node thành Subgraph để tái sử dụng"],
+    ]},
+  { id:"l5", name:"Hệ thống", hours:"8 giờ", out:"1 theme slot mini hoàn chỉnh: symbol, nền, khung reel, nút, Big Win.",
+    reads:[["#w7","W7 API"],["#studio-tq","Studio TQ"],["#w-paint","Paintover"]],
+    tasks:[
+      ["l5-1","Export workflow dạng API (JSON)"],
+      ["l5-2","Nhờ Claude viết script batch đọc CSV, có bước lọc tự động (hỏi trước khi chạy)"],
+      ["l5-3","Cài Krita AI Diffusion, paintover 1 symbol"],
+      ["l5-4","Dựng prompt library và reference library theo theme"],
+      ["l5-5","Hoàn thành theme mini: symbol, nền, khung reel, nút Spin, banner Big Win"],
+      ["l5-6","Ghép UI, chữ, số trong Figma, export đúng kích thước game"],
+    ]},
+];
+
+/* Mẫu prompt: nat = câu văn (Z-Image / FLUX.2), tag = SDXL. fields = ô cần hiện */
+const PROMPTS = {
+  high:{ label:"High symbol", fields:["theme","object"], obj:"Vật thể", def:{object:"a golden scarab beetle with blue gem eyes"},
+    nat:f=>`A ${f.theme} slot game high-pay symbol: ${f.object}. Centered, fills 80% of the frame, front three-quarter view. Thick polished gold rim, glossy gem accents, soft rim light from the top-left, high contrast, stylized 3D render, mobile casual game asset. Isolated on a flat neutral gray background. No text.`,
+    tag:f=>`masterpiece game asset, ${f.theme} slot game symbol, ${f.object}, centered composition, clean silhouette, vibrant colors, polished 3D game icon, soft studio lighting, subtle rim light, high contrast, readable at small size, isolated on flat neutral gray background, no text, no watermark, no UI frame, no logo` },
+  low:{ label:"Low symbol (A K Q J 10)", fields:["object","material"], tagFields:["material"], obj:"Chữ cái", def:{object:"K", material:"jade green"},
+    nat:f=>`A slot game low-pay symbol: the letter "${f.object}" in a chunky bold serif, ${f.material} with a thin gold outline, slightly beveled, centered, flat neutral gray background.`,
+    tag:f=>`slot game low symbol plaque, ${f.material}, thin gold outline, slightly beveled, centered composition, front view, flat neutral gray background, no text, no watermark`,
+    tagNote:"SDXL vẽ chữ kém: prompt này sinh plaque trống, chữ cái set tay sau. Muốn model vẽ luôn chữ thì dùng Z-Image Turbo." },
+  wild:{ label:"Wild / Scatter (plaque trống)", fields:["theme","material"], def:{material:"gold and red lacquer"},
+    nat:f=>`An ornate empty ${f.material} plaque for a ${f.theme} slot "WILD" symbol, no letters, centered, front view, flat gray background.`,
+    tag:f=>`${f.theme} slot game symbol plaque, ornate empty plaque, ${f.material}, no letters, centered composition, front view, flat neutral gray background, no text, no watermark`,
+    note:"Chữ WILD / SCATTER set font tay sau." },
+  bg:{ label:"Nền base game", fields:["theme","object"], obj:"Bối cảnh", def:{object:"ancient temple courtyard at dusk"},
+    nat:f=>`${cap(f.theme)} slot game background, ${f.object}, painterly, soft depth of field. The center area is darker and simple to leave room for the reels. No characters, no text. Vertical 9:16 composition.`,
+    tag:f=>`${f.theme} slot game background, vertical 9:16 composition, cinematic depth, empty central reel area, ${f.object}, golden light, high-end mobile game art, clean focal hierarchy, no text, no UI, no characters`,
+    note:"Empty Latent 1024×1536 cho nền dọc. Tỉ lệ 16:9 thì đổi composition và kích thước." },
+  reel:{ label:"Khung reel 5×3", fields:["theme","material"], def:{material:"gold and red lacquer"},
+    nat:f=>`An ornate empty ${f.theme} slot reel frame with 5 columns and 3 rows of dark empty windows, ${f.material}, symmetrical, front view, flat gray background.`,
+    tag:f=>`high-end mobile game UI frame, ${f.theme} style, ornate ${f.material} reel frame, 5 columns and 3 rows of dark empty windows, clean center area, polished materials, subtle glow, symmetrical, no text, no number, no logo, no watermark, centered composition`,
+    note:"Dùng ControlNet với lưới 5×3 vẽ trong Figma để khung đúng hình." },
+  spin:{ label:"Nút Spin", fields:["material"], def:{material:"red candy"},
+    nat:f=>`A round SPIN button for a mobile game UI, glossy ${f.material} material with a gold ring and a circular arrow icon, front view, flat gray background.`,
+    tag:f=>`round spin button, mobile game UI, glossy ${f.material} material, gold ring, circular arrow icon, front view, centered composition, flat neutral gray background, no text, no watermark` },
+  bigwin:{ label:"Banner Big Win", fields:["theme"], def:{},
+    nat:f=>`An ornate golden ${f.theme} banner frame with an empty center plate for a "BIG WIN" title, coins and sparkles around it, front view, isolated on a flat gray background.`,
+    tag:f=>`${f.theme} big win banner frame, ornate golden banner, empty center plate, coins and sparkles, front view, centered composition, flat neutral gray background, no text, no watermark`,
+    note:"Chữ BIG WIN set font tay sau." },
+  mascot:{ label:"Mascot", fields:["theme","object"], obj:"Nhân vật", def:{object:"a cheerful young pharaoh cat"},
+    nat:f=>`A friendly, charismatic ${f.theme} slot game mascot: ${f.object}. Full body, clean silhouette, expressive face, high-end mobile game art, studio lighting, isolated on a flat neutral gray background. No text.`,
+    tag:f=>`${f.theme} slot game mascot, ${f.object}, friendly charismatic character, full body, clean silhouette, expressive face, high-end mobile game art, consistent character design, studio lighting, isolated on flat neutral gray background, no text, no watermark, no UI`,
+    note:"Cần nhiều pose cùng nhân vật thì khóa bằng ảnh tham chiếu hoặc LoRA (W2)." },
+};
+const NEG = "text, letters, numbers, watermark, signature, logo, blurry, low contrast, messy edges, extra objects, multiple objects, cropped, cluttered background, realistic photo, UI text, gambling logo, currency symbol, deformed, bad anatomy, low quality, jpeg artifacts";
+const KWS = ["ComfyUI 游戏UI","游戏资产 工作流","slot游戏素材","游戏图标 ComfyUI","ControlNet 游戏UI","游戏图标","宝石","金币"];
+
+/* ============================================================
+   TIỆN ÍCH + LƯU TRỮ
+   localStorage chỉ dùng cho tiến độ / ghi chú của người xem này.
+   Mọi lần đọc/ghi bọc try/catch vì có thể bị chặn (private mode, file://).
+   ============================================================ */
+const KEY = "comfyui-slot-guide:";
+const store = {
+  get(k, f){ try { const v = localStorage.getItem(KEY + k); return v === null ? f : JSON.parse(v); } catch { return f; } },
+  set(k, v){ try { localStorage.setItem(KEY + k, JSON.stringify(v)); return true; } catch { return false; } },
+};
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
+let checks = store.get("checks", {});
+let qa = store.get("qa", {});
+let notes = store.get("notes", {});
+
+function toast(msg){
+  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove("show"), 1800);
+}
+async function copyText(text){
+  try { await navigator.clipboard.writeText(text); }
+  catch {
+    // Dự phòng khi Clipboard API bị chặn (một số trình duyệt với file://)
+    const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch {}
+    ta.remove();
+  }
+  toast("Đã sao chép");
+}
+
+/* ============================================================
+   SƠ ĐỒ NODE
+   ============================================================ */
+const typeVar = k => TYPES.find(t => t.k === k).v;
+function drawWires(){
+  const g = $("#graph"), svg = $("#wires"), gr = g.getBoundingClientRect();
+  // Tâm của chấm cổng, tính theo tọa độ của khung sơ đồ
+  const pt = id => { const r = g.querySelector(`[data-port="${id}"]`).getBoundingClientRect(); return [r.left + r.width/2 - gr.left, r.top + r.height/2 - gr.top]; };
+  svg.innerHTML = WIRES.map(([a, b, t]) => {
+    const [x1, y1] = pt(a), [x2, y2] = pt(b);
+    const k = Math.max(36, Math.abs(x2 - x1) * .5); // độ cong: kéo ngang ra như dây ComfyUI
+    return `<path data-type="${t}" style="stroke:var(${typeVar(t)})" d="M${x1},${y1} C${x1 + k},${y1} ${x2 - k},${y2} ${x2},${y2}"/>`;
+  }).join("");
+  applyTypeFilter();
+}
+let activeType = null;
+function applyTypeFilter(){
+  $$("#wires path").forEach(p => p.classList.toggle("dim", !!activeType && p.dataset.type !== activeType));
+  $$(".type-chip").forEach(c => c.setAttribute("aria-pressed", c.dataset.type === activeType));
+}
+function showNode(id){
+  const n = NODES[id];
+  $$(".node").forEach(b => b.setAttribute("aria-pressed", b.dataset.node === id));
+  $("#nodeDetail").innerHTML = `<h3>${n.t}</h3><p class="analogy">${n.a}</p>${n.body}`;
+}
+$("#legend").innerHTML = TYPES.filter(t => t.k !== "MASK").map(t =>
+  `<button class="type-chip" data-type="${t.k}" style="--wc:var(${t.v})" aria-pressed="false"><i></i>${t.k}</button>`).join("");
+$("#legend").addEventListener("click", e => {
+  const c = e.target.closest(".type-chip"); if (!c) return;
+  activeType = activeType === c.dataset.type ? null : c.dataset.type; applyTypeFilter();
+});
+$("#graph").addEventListener("click", e => { const b = e.target.closest(".node"); if (b) showNode(b.dataset.node); });
+showNode("ks");
+new ResizeObserver(drawWires).observe($("#graph"));
+if (document.fonts) document.fonts.ready.then(drawWires);
+
+$("#typeTable").innerHTML = TYPES.map(t =>
+  `<tr><td><code style="color:var(${t.v});background:none;padding:0">${t.k}</code></td><td class="plain">${t.what}</td><td class="plain">${t.flow}</td></tr>`).join("");
+
+/* ============================================================
+   KSAMPLER
+   ============================================================ */
+let ksM = "z";
+function renderKS(){
+  $("#ksColHead").textContent = "Giá trị cho " + KS_NAMES[ksM];
+  $("#ksTable").innerHTML = KS.map(r => `<tr><td><code>${r.p}</code></td><td class="plain">${r.what}</td><td class="plain"><strong>${r[ksM]}</strong></td><td class="plain">${r.tip}</td></tr>`).join("");
+  $$("#ksModel button").forEach(b => b.setAttribute("aria-pressed", b.dataset.m === ksM));
+}
+$("#ksModel").addEventListener("click", e => { const b = e.target.closest("button"); if (b){ ksM = b.dataset.m; renderKS(); } });
+renderKS();
+
+function renderDenoise(){
+  const v = +$("#dn").value;
+  let t;
+  if (v < .15) t = "Gần như không đổi gì so với ảnh đầu vào.";
+  else if (v <= .3) t = "Đánh bóng sau upscale: giữ nguyên hình, làm sắc chi tiết.";
+  else if (v < .6) t = (v < .35 ? "Giữa đánh bóng và biến thể. " : "") + "Ra biến thể: giữ bố cục, đổi chi tiết. Dùng để làm 4 biến thể của 1 symbol.";
+  else if (v < 1) t = "Đổi nhiều, bố cục bắt đầu trôi khỏi ảnh gốc.";
+  else t = "Vẽ mới hoàn toàn (txt2img). Ảnh đầu vào không còn tác dụng.";
+  $("#dnVal").textContent = v.toFixed(2); $("#dnText").textContent = t;
+}
+$("#dn").addEventListener("input", renderDenoise); renderDenoise();
+
+/* ============================================================
+   TỪ ĐIỂN, MODEL, LỖI
+   ============================================================ */
+function renderDict(){
+  const q = $("#dictQ").value.trim().toLowerCase();
+  const rows = DICT.filter(r => !q || r.join(" ").toLowerCase().includes(q));
+  $("#dictTable").innerHTML = rows.length ? rows.map(([n, t, m, k]) =>
+    `<tr><td>${esc(n)}<span class="dict-type">${t}</span></td><td class="plain">${esc(m)}</td><td class="plain">${esc(k)}</td></tr>`).join("")
+    : `<tr><td colspan="3" class="plain">Không có mục nào khớp “${esc(q)}”. Thử từ ngắn hơn, ví dụ “lora”.</td></tr>`;
+  $("#dictCount").textContent = `${rows.length}/${DICT.length} mục`;
+}
+$("#dictQ").addEventListener("input", renderDict); renderDict();
+
+const BADGE = { ok:"b-ok", warn:"b-warn", bad:"b-bad" };
+function renderModels(){
+  const fc = $("#fCommercial").checked, fm = $("#fMac").checked;
+  const rows = MODELS.filter(m => (!fc || m.lic === "ok") && (!fm || m.mac === "ok"));
+  $("#modelTable").innerHTML = rows.map(m => `<tr><td>${m.n}</td><td class="plain">${m.s}</td>
+    <td class="plain"><span class="badge ${BADGE[m.lic]}">${m.licT}</span></td>
+    <td class="plain"><span class="badge ${BADGE[m.mac]}">${m.mac === "ok" ? "Tốt" : m.mac === "warn" ? "Chậm" : "Không nên"}</span> ${m.macT}</td>
+    <td class="plain">${m.use}</td></tr>`).join("");
+  $("#modelCount").textContent = `${rows.length}/${MODELS.length} model`;
+}
+$("#fCommercial").addEventListener("change", renderModels); $("#fMac").addEventListener("change", renderModels); renderModels();
+
+let errG = "all";
+function renderErr(){
+  const q = $("#errQ").value.trim().toLowerCase();
+  const rows = ERRORS.filter(r => (errG === "all" || r.g === errG) && (!q || (r.s + r.c + r.f).toLowerCase().includes(q)));
+  $("#errTable").innerHTML = rows.length ? rows.map(r => `<tr><td>${esc(r.s)}</td><td class="plain">${esc(r.c)}</td><td class="plain">${esc(r.f)}</td></tr>`).join("")
+    : `<tr><td colspan="3" class="plain">Không thấy lỗi khớp “${esc(q)}”. Thử từ khác, hoặc ghi lỗi mới vào Ghi chú.</td></tr>`;
+  $$("#errSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.g === errG));
+}
+$("#errQ").addEventListener("input", renderErr);
+$("#errSeg").addEventListener("click", e => { const b = e.target.closest("button"); if (b){ errG = b.dataset.g; renderErr(); } });
+renderErr();
+
+/* ============================================================
+   PIPELINE TABS
+   ============================================================ */
+function setPipeTab(tab){
+  $$("#pipeTabs button").forEach(b => { const on = b.dataset.tab === tab; b.setAttribute("aria-pressed", on); b.setAttribute("aria-selected", on); });
+  $("#tab-steps").hidden = tab !== "steps"; $("#tab-types").hidden = tab !== "types";
+}
+$("#pipeTabs").addEventListener("click", e => { const b = e.target.closest("button"); if (b) setPipeTab(b.dataset.tab); });
+
+/* Link tới #w1…#w7 hay #tab-types: tự mở đúng tab / mở details trước khi cuộn */
+function revealTarget(hash){
+  const el = hash && document.getElementById(hash.slice(1)); if (!el) return;
+  if (hash === "#tab-types") setPipeTab("types");
+  if (el.matches("details.step")){ setPipeTab("steps"); el.open = true; }
+}
+document.addEventListener("click", e => {
+  const a = e.target.closest('a[href^="#"]'); if (!a) return;
+  revealTarget(a.getAttribute("href"));
+  closeSide();
+});
+
+/* ============================================================
+   PROMPT BUILDER
+   ============================================================ */
+$("#pbAsset").innerHTML = Object.entries(PROMPTS).map(([k, p]) => `<option value="${k}">${p.label}</option>`).join("");
+function loadAssetDefaults(){
+  const p = PROMPTS[$("#pbAsset").value];
+  if (p.def.object !== undefined) $("#pbObject").value = p.def.object;
+  if (p.def.material !== undefined) $("#pbMaterial").value = p.def.material;
+  $("#pbObjectLabel").textContent = p.obj || "Vật thể";
+}
+function renderPrompt(){
+  const p = PROMPTS[$("#pbAsset").value], m = $("#pbModel").value;
+  // Chỉ hiện ô mà mẫu prompt của model đang chọn thực sự dùng
+  const used = (m === "tag" && p.tagFields) || p.fields;
+  $$("#prompt [data-f]").forEach(f => f.hidden = !used.includes(f.dataset.f));
+  const f = { theme: $("#pbTheme").value.trim() || "[theme]", object: $("#pbObject").value.trim() || "[vật thể]", material: $("#pbMaterial").value.trim() || "[chất liệu]" };
+  $("#pbOut").textContent = p[m](f);
+  $("#pbNeg").textContent = NEG;
+  $("#pbNegWrap").hidden = m !== "tag";
+  const notesTxt = [];
+  if (m === "nat") notesTxt.push("Z-Image Turbo / FLUX.2 chạy cfg = 1 nên không dùng prompt âm: điều không muốn đã ghi thẳng vào prompt.");
+  if (m === "tag" && p.tagNote) notesTxt.push(p.tagNote);
+  if (p.note) notesTxt.push(p.note);
+  $("#pbNote").textContent = notesTxt.join(" ");
+  // Cảnh báo luật vault: không nhắc studio / game thật trong prompt
+  $("#pbWarn").classList.toggle("show", /style of|in the style|by studio/i.test(f.theme + " " + f.object + " " + f.material));
+}
+$("#pbAsset").addEventListener("change", () => { loadAssetDefaults(); renderPrompt(); });
+["#pbModel","#pbTheme","#pbObject","#pbMaterial"].forEach(s => $(s).addEventListener("input", renderPrompt));
+loadAssetDefaults(); renderPrompt();
+
+/* Tên file */
+function renderName(){
+  const clean = s => s.trim().toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_-]/g, "");
+  const g = clean($("#nGame").value) || "slot", t = $("#nType").value, th = clean($("#nTheme").value) || "theme", v = clean($("#nVar").value) || "variant";
+  const ver = "v" + String(Math.max(1, +$("#nVer").value || 1)).padStart(2, "0");
+  $("#nOut").textContent = `${th}/${t}/${g}_${t}_${th}_${v}_${ver}`;
+}
+["#nGame","#nType","#nTheme","#nVar","#nVer"].forEach(s => $(s).addEventListener("input", renderName)); renderName();
+
+/* Nút sao chép: data-copy = id của khối cần sao chép */
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-copy]"); if (b) copyText($("#" + b.dataset.copy).textContent);
+});
+$("#kws").innerHTML = KWS.map(k => `<button class="kw">${k}</button>`).join("");
+$("#kws").addEventListener("click", e => { const b = e.target.closest(".kw"); if (b) copyText(b.textContent); });
+
+/* ============================================================
+   CẤU TRÚC PROMPT THEO TÌNH HUỐNG
+   segs: [số thứ tự phần trong công thức, đoạn văn]. raw: ví dụ dạng code (JSON)
+   ============================================================ */
+const SITS = [
+  { id:"s-symbol", name:"Symbol mới", models:"Z-Image Turbo, FLUX.2, Nano Banana, GPT Image 2",
+    formula:["Loại asset","Chủ thể và chi tiết","Góc nhìn, bố cục","Chất liệu, ánh sáng","Style render","Nền, ràng buộc"],
+    segs:[[1,"A slot game high-pay symbol:"],[2,"a golden scarab beetle with two blue sapphire eyes and engraved wing patterns."],[3,"Front three-quarter view, centered, filling 80% of the square frame."],[4,"Polished gold metal with glossy gem accents, soft rim light from the top-left."],[5,"Stylized 3D render, mobile casual game asset."],[6,"Isolated on a plain flat neutral gray background. No text."]],
+    tips:["Đổi phần 2 để ra symbol khác, giữ nguyên các phần còn lại để cả bộ cùng style.","Phần 3 và 6 giúp tách nền sạch và xếp lên reel đều nhau."] },
+  { id:"s-low", name:"Bộ Low symbol", models:"Z-Image Turbo (vẽ được chữ), FLUX.2",
+    formula:["Loại asset","Chữ cái","Kiểu chữ","Màu, chất liệu","Viền, độ nổi","Bố cục, nền"],
+    segs:[[1,"A slot game low-pay symbol:"],[2,"the letter \"K\""],[3,"in a chunky bold serif,"],[4,"carved from jade green stone"],[5,"with a thin gold outline, slightly beveled."],[6,"Centered, front view, plain flat neutral gray background."]],
+    extra:`<div class="tbl"><table><thead><tr><th>Phần 2: chữ</th><th>Phần 4: màu, chất liệu</th></tr></thead><tbody>
+      <tr><td>A</td><td class="plain">carved from amethyst purple stone</td></tr><tr><td>K</td><td class="plain">carved from jade green stone</td></tr>
+      <tr><td>Q</td><td class="plain">carved from ruby red stone</td></tr><tr><td>J</td><td class="plain">carved from sapphire blue stone</td></tr>
+      <tr><td>10</td><td class="plain">carved from amber orange stone</td></tr></tbody></table></div>`,
+    tips:["Giữ seed và khung ControlNet, chỉ thay phần 2 và 4 theo bảng. Cả bộ sẽ cùng kích thước, cùng độ nổi.","Mỗi chữ một màu riêng để người chơi phân biệt nhanh trên reel."] },
+  { id:"s-bg", name:"Nền game", models:"Z-Image Turbo, FLUX.2 Pro, SDXL",
+    formula:["Loại ảnh, tỉ lệ","Bối cảnh","Vùng chừa cho UI","Ánh sáng, mood","Style","Ràng buộc"],
+    segs:[[1,"A vertical 9:16 slot game background:"],[2,"an ancient Egyptian temple courtyard at dusk with sandstone pillars and palm trees."],[3,"The center is darker, simple and low-detail to leave room for a 5×3 reel grid."],[4,"Warm golden light from the horizon, soft haze, calm and mysterious mood."],[5,"Painterly high-end mobile game art, soft depth of field."],[6,"No characters, no text."]],
+    tips:["Phần 3 hay bị quên nhất. Thiếu nó, nền sẽ có chi tiết dày đúng chỗ đặt reel.","Empty Latent 1024×1536 cho nền dọc. Nền ngang 16:9 thì đổi phần 1 và kích thước."] },
+  { id:"s-frame", name:"Khung UI, nút (ControlNet)", models:"SDXL hoặc Z-Image + ControlNet",
+    formula:["Đối tượng UI","Hình khối khớp khung","Chất liệu","Chi tiết trang trí","Góc nhìn, đối xứng","Nền"],
+    segs:[[1,"An ornate slot reel frame"],[2,"with 5 columns and 3 rows of dark empty windows,"],[3,"made of polished gold and red lacquer,"],[4,"with lotus carvings on the corners and a small scarab crest on top,"],[5,"perfectly symmetrical, flat front view,"],[6,"on a plain flat gray background."]],
+    tips:["Hình khối do ảnh khung ControlNet quyết định. Prompt chỉ cần khớp với khung (5 cột, 3 hàng) và tập trung vào chất liệu, trang trí.","Nút Spin: thay phần 1–2 bằng “A round SPIN button with a circular arrow icon”."] },
+  { id:"s-edit", name:"Sửa một chi tiết", models:"FLUX.2 klein, Qwen-Image-Edit, GPT Image 2, Nano Banana",
+    formula:["Động từ","Đối tượng cần đổi","Thay đổi cụ thể","Câu giữ nguyên"],
+    segs:[[1,"Change"],[2,"the gem on the scarab's forehead"],[3,"from blue sapphire to a bright emerald green with the same facet cuts."],[4,"Keep the gold body, lighting, camera angle, size and gray background exactly the same."]],
+    extra:`<h4>Thêm 2 ví dụ</h4><div class="code"><pre>Remove the small crack on the left wing. Do not change anything else.
+
+Replace the text "WILD" with "BONUS" in the same font, size, color and position. Keep all other elements unchanged.</pre></div>`,
+    tips:["Viết lệnh sửa, đừng tả lại cả ảnh. Tả lại cả cảnh làm model bỏ qua ảnh gốc.","Lặp lại câu giữ nguyên ở mỗi lần sửa để ảnh không trôi dần.","Sửa chữ trong ảnh: Qwen-Image-Edit giữ được font và cỡ chữ gốc. Tăng số bước, ít bước dễ ra chữ mờ."] },
+  { id:"s-ref", name:"Giữ style bằng ảnh mẫu", models:"FLUX.2 klein, Nano Banana 2, Seedream 5.0",
+    formula:["Ảnh mẫu và vai trò","Quan hệ","Vật thể mới","Ràng buộc đồng bộ"],
+    segs:[[1,"Using images 1 and 2 as the style reference for material, lighting and outline thickness,"],[2,"create a new symbol in exactly the same style:"],[3,"a golden Eye of Horus amulet with a turquoise inlay."],[4,"Same front three-quarter view, same size in frame, same plain gray background."]],
+    tips:["Ghi rõ lấy gì từ ảnh mẫu (chất liệu, ánh sáng, độ dày viền). Ghi chung chung “giống ảnh” thì model dễ chép luôn cả hình dáng.","Dùng 2–4 symbol đã duyệt. Bộ lớn hơn thì chuyển sang lưới ảnh mẫu hoặc LoRA (W2)."] },
+  { id:"s-text", name:"Có chữ trong ảnh", models:"Qwen-Image, GPT Image 2, Nano Banana, Ideogram 4.0",
+    formula:["Đối tượng","Chữ trong ngoặc kép","Font, màu","Vị trí","Style, nền"],
+    segs:[[1,"A golden slot game title plate"],[2,"with the text \"SANDSTONE SCARAB\""],[3,"in bold carved serif letters, color #F5C542 with a dark brown outline,"],[4,"centered on the plate in two lines,"],[5,"glossy 3D game UI style, on a plain flat gray background."]],
+    tips:["Chữ do AI vẽ chỉ dùng cho bản nháp và mockup. Bản giao khách vẫn set font tay để sửa được.","Từ khó thì đánh vần từng chữ cái, và yêu cầu chữ xuất hiện đúng một lần.","Tên game trong ví dụ là tên giả. Không dùng tên game hay studio thật."] },
+  { id:"s-mock", name:"Mockup màn hình để pitch", models:"GPT Image 2, Nano Banana Pro",
+    formula:["Mục đích, thiết bị","Thanh trên","Vùng giữa","Thanh dưới","Style"],
+    segs:[[1,"A realistic mobile slot game screen mockup, portrait 9:16."],[2,"Top bar: a coin balance showing \"12,500\" and a menu icon."],[3,"Center: a 5×3 reel grid in an ornate gold frame filled with Egyptian symbols: scarab, ankh, Eye of Horus, lotus, and A K Q J 10 letters."],[4,"Bottom: a large round red SPIN button, a \"BET 50\" label and an auto-play toggle."],[5,"Polished mobile casual game UI, clean hierarchy, Figma mockup quality."]],
+    tips:["Tả như thể màn hình đã tồn tại, theo thứ tự trên xuống dưới.","Chỉ dùng để chốt hướng với khách. Không cắt mockup ra làm asset."] },
+  { id:"s-sdxl", name:"Dạng tag cho SDXL", models:"SDXL và các bản fine-tune",
+    formula:["Chủ thể có trọng số","Chi tiết","Bố cục","Chất liệu, ánh sáng","Style","Nền, chất lượng"],
+    segs:[[1,"slot game symbol, (golden scarab beetle:1.2),"],[2,"blue sapphire eyes, engraved wings,"],[3,"centered, front three-quarter view,"],[4,"polished gold, glossy, soft rim light,"],[5,"stylized 3D game icon, mobile game asset,"],[6,"flat gray background, high contrast, masterpiece, best quality"]],
+    neg:"text, watermark, logo, blurry, low contrast, cropped, multiple objects, cluttered background, deformed",
+    tips:["Tăng trọng số nhẹ (1.1–1.3) cho phần quan trọng. Quá cao ảnh dễ vỡ.","Prompt âm giữ ngắn, nhắm đúng lỗi hay gặp."] },
+  { id:"s-json", name:"JSON cho chạy hàng loạt", models:"FLUX.2 (klein, Pro)",
+    formula:["scene","subjects","style","lighting","background","composition","color_palette"],
+    raw:`{
+  "scene": "slot game high-pay symbol, single object",
+  "subjects": [
+    { "description": "golden scarab beetle with blue sapphire eyes",
+      "position": "center, fills 80% of the frame" }
+  ],
+  "style": "stylized 3D render, mobile casual game asset",
+  "lighting": "soft rim light from the top-left",
+  "background": "plain flat neutral gray",
+  "composition": "front three-quarter view, square 1:1",
+  "color_palette": ["#D4AF37", "#1E5AA8", "#7A4B12"]
+}`,
+    tips:["Script batch (W7) chỉ cần thay subjects[0].description theo từng dòng CSV. Các trường khác giữ nguyên nên cả bộ đồng đều.","Lặp nhanh thì câu văn tiện hơn. JSON hợp khi chạy hàng loạt hoặc cần khóa bảng màu brand."] },
+];
+let sitId = "s-symbol";
+function renderSit(){
+  const s = SITS.find(x => x.id === sitId);
+  $$("#sitTabs .sit-tab").forEach(b => b.setAttribute("aria-pressed", b.dataset.id === sitId));
+  const formula = `<ol class="formula">${s.formula.map((f, i) => `<li data-s="${i + 1}" tabindex="0"><span class="sn">${i + 1}</span>${esc(f)}</li>`).join("")}</ol>`;
+  let example;
+  if (s.raw){
+    example = `<div class="out-label"><span>Ví dụ</span><button class="btn small copy" data-copy="sitPlain">Sao chép</button></div><div class="code"><pre id="sitPlain">${esc(s.raw)}</pre></div>`;
+  } else {
+    // Bản chú thích để đọc, bản text thuần (ẩn) để sao chép
+    const plain = s.segs.map(x => x[1]).join(" ");
+    example = `<div class="out-label"><span>Ví dụ, đánh số theo từng phần</span><button class="btn small copy" data-copy="sitPlain">Sao chép</button></div>
+      <div class="annot">${s.segs.map(([n, t]) => `<span class="sg" data-s="${n}"><span class="sn">${n}</span>${esc(t)}</span>`).join(" ")}</div>
+      <pre id="sitPlain" hidden>${esc(plain)}</pre>`;
+  }
+  const neg = s.neg ? `<div class="out-label"><span>Prompt âm</span><button class="btn small copy" data-copy="sitNeg">Sao chép</button></div><div class="code"><pre id="sitNeg">${esc(s.neg)}</pre></div>` : "";
+  $("#sitPanel").innerHTML = `<h4>${esc(s.name)}</h4><p class="sit-models">Hợp với: ${esc(s.models)}</p>${formula}${example}${neg}${s.extra || ""}
+    <h4>Lưu ý</h4><ul>${s.tips.map(t => `<li>${esc(t)}</li>`).join("")}</ul>`;
+}
+$("#sitTabs").innerHTML = SITS.map(s => `<button class="sit-tab" data-id="${s.id}" aria-pressed="false">${esc(s.name)}</button>`).join("");
+$("#sitTabs").addEventListener("click", e => { const b = e.target.closest(".sit-tab"); if (b){ sitId = b.dataset.id; renderSit(); } });
+/* Rê chuột / focus vào một phần: tô sáng phần tương ứng ở cả công thức và ví dụ */
+function hlSeg(n){ $$("#sitPanel [data-s]").forEach(el => el.classList.toggle("hl", n !== null && el.dataset.s === n)); }
+["mouseover","focusin"].forEach(ev => $("#sitPanel").addEventListener(ev, e => { const t = e.target.closest("[data-s]"); hlSeg(t ? t.dataset.s : null); }));
+["mouseleave","focusout"].forEach(ev => $("#sitPanel").addEventListener(ev, () => hlSeg(null)));
+$("#sitPanel").addEventListener("click", e => { const t = e.target.closest("[data-s]"); if (t) hlSeg(t.dataset.s); }); // chạm trên mobile
+renderSit();
+
+/* ============================================================
+   TOP 10 MODEL CHO ASSET VÀ UI GAME (cập nhật 11/2026)
+   kind: local / api. lic: ok = license mở dùng thương mại; tos = theo điều khoản dịch vụ
+   ============================================================ */
+const TOP = [
+  { n:"Z-Image Turbo", by:"Alibaba Tongyi, 11/2025", kind:"local", lic:"ok", licT:"Apache 2.0", cost:"Miễn phí",
+    one:"Máy chính để sinh nhanh trên M2 Max: symbol, nền, khám phá style.",
+    pros:["6B, khoảng 8 bước: nhanh, vừa RAM 32GB","Hiểu câu văn tự nhiên, vẽ được chữ tiếng Anh và tiếng Trung","Apache 2.0: dùng cho khách được","Có ControlNet riêng (Fun ControlNet Union)"],
+    cons:["Không dùng prompt âm, mọi ràng buộc phải viết vào prompt chính","Kho LoRA, IPAdapter, LayerDiffuse nhỏ hơn SDXL"],
+    use:"W1 khám phá style, symbol, nền, low symbol có chữ",
+    how:["Mở template Z-Image Turbo trong ComfyUI, tải bản bf16 (không dùng fp8 trên Mac)","Giữ số bước (khoảng 8) và cfg = 1 của template","Viết câu văn theo công thức ở mục 12, 3–5 ý chính","Ưng ảnh nào thì chuyển seed sang fixed rồi mới chỉnh prompt"],
+    prompt:"s-symbol", src:[["ComfyUI docs","https://docs.comfy.org/tutorials/image/z-image/z-image-turbo"],["fal prompt guide","https://fal.ai/learn/devs/z-image-turbo-prompt-guide"]] },
+  { n:"FLUX.2 [klein] 4B", by:"Black Forest Labs, 01/2026", kind:"local", lic:"ok", licT:"Apache 2.0", cost:"Miễn phí",
+    one:"Sửa ảnh bằng câu lệnh, dùng nhiều ảnh tham chiếu để giữ style cả bộ.",
+    pros:["4 bước, nhẹ, vừa RAM 32GB","Đổi màu, vật liệu, thay vật thể mà giữ nguyên phần còn lại","Nhận nhiều ảnh tham chiếu: giữ style cho cả bộ symbol","Dùng chung text encoder với Z-Image Turbo, đỡ tốn ổ đĩa"],
+    cons:["Docs ComfyUI chỉ link bản fp8, trên Mac phải tự tải bản bf16","Bản 9B mạnh hơn nhưng license phi thương mại"],
+    use:"W2 khóa style, W4 biến thể và sửa",
+    how:["Tải flux-2-klein-4b.safetensors (bf16, 7.75GB) từ Hugging Face của BFL","Mở template FLUX.2 klein, nạp 2–4 symbol đã duyệt làm ảnh tham chiếu","Viết lệnh sửa: động từ, đối tượng, thay đổi, câu giữ nguyên","Không dùng prompt âm: tả điều muốn có"],
+    prompt:"s-edit", src:[["ComfyUI docs","https://docs.comfy.org/tutorials/flux/flux-2-klein"],["Hugging Face","https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/tree/main"]] },
+  { n:"SDXL và hệ sinh thái", by:"Stability AI, 2023 và cộng đồng", kind:"local", lic:"ok", licT:"OpenRAIL++", cost:"Miễn phí",
+    one:"Hệ sinh thái lớn nhất: ảnh trong suốt, ControlNet, IPAdapter, LoRA game icon.",
+    pros:["LayerDiffuse sinh thẳng ảnh RGBA trong suốt, viền sạch nhất","Kho LoRA game icon và ControlNet lớn nhất","Ổn định trên Mac, nhiều workflow mẫu"],
+    cons:["Hiểu câu dài kém hơn model đời mới, vẽ chữ kém","Cần 25–35 bước nên chậm hơn Turbo","Mỗi fine-tune, mỗi LoRA có license riêng"],
+    use:"W5 ảnh trong suốt bằng LayerDiffuse, khung UI bằng ControlNet, mascot với IPAdapter",
+    how:["Nạp bằng Load Checkpoint","steps 25–35, cfg 5–7, dpmpp_2m + karras","Prompt dạng tag kèm prompt âm (tình huống “Dạng tag cho SDXL”)","Đọc license của fine-tune và LoRA trước khi dùng cho khách"],
+    prompt:"s-sdxl", src:[["ComfyUI-layerdiffuse","https://github.com/huchenlei/ComfyUI-layerdiffuse"],["ComfyUI Examples","https://comfyanonymous.github.io/ComfyUI_examples/"]] },
+  { n:"Qwen-Image, Edit, Layered", by:"Alibaba Qwen, 2025", kind:"local", lic:"ok", licT:"Apache 2.0", cost:"Miễn phí, nên chạy cloud GPU",
+    one:"Chữ chính xác, sửa chữ giữ nguyên font, và tách một ảnh thành nhiều layer.",
+    pros:["Vẽ và sửa chữ tiếng Anh, tiếng Trung, giữ cỡ chữ, font, style gốc","Qwen-Image-Layered tách 1 ảnh thành nhiều layer RGBA: hợp chuẩn bị file cho Spine","Bản API Qwen Image 3.0 Pro có sẵn trong Partner Nodes"],
+    cons:["20B: trên Mac chỉ chạy bản GGUF, nhiều phút một ảnh","Qwen-Image 2.1 đổi sang license nghiên cứu, không dùng cho khách"],
+    use:"Tiêu đề game, nút có chữ, sửa chữ, tách layer cho animation",
+    how:["Trên Mac: bản GGUF qua ComfyUI-GGUF, hoặc thuê cloud GPU","Sửa: viết lệnh, kết thúc bằng “keep all other elements unchanged”","Có chữ thì tăng số bước, ít bước dễ ra chữ mờ","Ảnh vào nên cắt sẵn đúng tỉ lệ đầu ra"],
+    prompt:"s-text", src:[["ComfyUI docs","https://docs.comfy.org/tutorials/image/qwen/qwen-image-edit"],["Qwen-Image-Layered","https://github.com/QwenLM/Qwen-Image-Layered"]] },
+  { n:"Nano Banana Pro và Nano Banana 2", by:"Google, 11/2025 và 02/2026", kind:"api", lic:"tos", licT:"Điều khoản Google", cost:"Pro khoảng $0.138/ảnh",
+    one:"Đứng đầu benchmark game art, giữ nhân vật và vật thể nhất quán qua nhiều ảnh.",
+    pros:["Hạng 1 benchmark game art của VibeDex (4.68/5), mạnh ở chi tiết trang bị, cơ khí","Nano Banana 2 giữ được tới 5 nhân vật và 14 vật thể trong một workflow, xuất tới 4K","Nhận tới 14 ảnh tham chiếu, gán vai trò cho từng ảnh","Chữ tốt, nhiều ngôn ngữ"],
+    cons:["Đắt nhất nhóm, không chạy local","Ảnh có watermark SynthID và C2PA","Ảnh gửi lên server Google: hỏi khách nếu là file của họ"],
+    use:"Mascot nhiều pose, bộ symbol cần nhất quán, mockup để pitch",
+    how:["Dùng node Nano Banana trong Partner Nodes của ComfyUI, hoặc Google AI Studio","Công thức: chủ thể, hành động, bối cảnh, bố cục, style","Có ảnh mẫu: ghi rõ ảnh nào lo cấu trúc, ảnh nào lo chất liệu","Sửa bằng hội thoại, mỗi lần nhắc lại điều cần giữ"],
+    prompt:"s-ref", src:[["Google Cloud prompt guide","https://cloud.google.com/blog/products/ai-machine-learning/ultimate-prompting-guide-for-nano-banana"],["Google: Nano Banana 2","https://blog.google/innovation-and-ai/technology/ai/nano-banana-2/"],["VibeDex","https://vibedex.ai/blog/best-ai-image-generator-game-art-2026"]] },
+  { n:"GPT Image 2", by:"OpenAI, 04/2026", kind:"api", lic:"tos", licT:"Điều khoản OpenAI", cost:"Trả theo ảnh, chọn mức quality",
+    one:"Theo lệnh và vẽ chữ tốt, có nền trong suốt thật qua API.",
+    pros:["Tham số background=transparent trả PNG có kênh alpha (bản preview từ khoảng 08/2026)","Chữ rõ, hợp tiêu đề, nhãn, mockup UI","Sửa ảnh theo kiểu “chỉ đổi X, giữ nguyên phần còn lại”","Bản trước (GPT Image 1.5) đứng hạng 2 benchmark game art, mạnh về giải phẫu nhân vật"],
+    cons:["Trả phí, không chạy local","Có báo cáo viền halo ở ảnh trong suốt","Chính sách nội dung có thể chặn một số prompt"],
+    use:"Symbol trong suốt không cần tách nền, mockup màn hình, chữ trong banner",
+    how:["Node GPT-Image-2 trong Partner Nodes, hoặc API OpenAI","Thứ tự: bối cảnh, chủ thể, chi tiết, ràng buộc; nêu mục đích ngay đầu","Ảnh trong suốt: background=transparent, xuất PNG hoặc WebP, không tả nền trong prompt","Nhiều chữ nhỏ: dùng quality medium hoặc high"],
+    promptText:"A game asset for a mobile slot game: a single golden scarab symbol with blue sapphire eyes, front three-quarter view, centered, polished gold with soft rim light, stylized 3D render. Isolated on a fully transparent background, no backdrop, no ground shadow.",
+    src:[["OpenAI Cookbook","https://developers.openai.com/cookbook/examples/multimodal/image-gen-models-prompting-guide"],["The Decoder","https://the-decoder.com/openais-gpt-image-2-can-now-generate-images-without-a-background/"]] },
+  { n:"Seedream 5.0", by:"ByteDance, 2026", kind:"api", lic:"tos", licT:"Điều khoản nhà cung cấp", cost:"Bản 4.5 khoảng $0.04/ảnh",
+    one:"Nhiều ảnh tham chiếu để khóa nhân vật hoặc vật thể, rẻ hơn nhóm đầu.",
+    pros:["Bản Pro (07/2026) cải thiện độ khớp prompt, độ nhất quán và chữ trong ảnh","Nhận tới 10 ảnh tham chiếu (bản Lite tới 14)","Rẻ hơn nhiều so với Nano Banana Pro"],
+    cons:["Thông tin phần lớn từ bên bán lại API, chưa có đánh giá độc lập","Giới hạn tham chiếu khác nhau giữa các bản: kiểm tra model ID"],
+    use:"Bộ symbol, mascot cần đồng bộ khi ngân sách thấp",
+    how:["Node Seedream 5.0 Pro hoặc Lite trong Partner Nodes của ComfyUI","Nạp ảnh tham chiếu đã duyệt, viết câu văn mô tả vật thể mới","Ghi rõ lấy gì từ ảnh mẫu: chất liệu, ánh sáng, độ dày viền"],
+    prompt:"s-ref", src:[["Artlist","https://artlist.io/blog/new-seedream-5-0-announcement/"],["ComfyUI Partner Nodes","https://docs.comfy.org/tutorials/partner-nodes/image/overview"]] },
+  { n:"FLUX.2 Pro và Max", by:"Black Forest Labs", kind:"api", lic:"tos", licT:"Điều khoản BFL", cost:"Pro khoảng $0.035/ảnh",
+    one:"Đáng tiền nhất trong nhóm API, mạnh về nền và môi trường.",
+    pros:["Hạng 3 benchmark game art, rẻ gần 4 lần Nano Banana Pro","Mạnh nhất về concept môi trường: hợp nền game","Hỗ trợ prompt JSON và mã màu hex: hợp chạy hàng loạt theo bảng màu brand","Tới 8 ảnh tham chiếu (bản Pro)"],
+    cons:["Kém 2 model đầu ở chi tiết cơ khí phức tạp","Không có prompt âm"],
+    use:"Nền game, key art, chạy hàng loạt theo bảng màu",
+    how:["Gọi qua API của BFL hoặc nhà cung cấp như fal","Công thức: chủ thể, hành động, style, bối cảnh; 30–80 từ","Màu brand: “in color #D4AF37” gắn với một vật cụ thể","Chạy hàng loạt: prompt JSON (tình huống “JSON cho chạy hàng loạt”)"],
+    prompt:"s-bg", src:[["BFL prompt guide","https://docs.bfl.ai/guides/prompting_guide_flux2"],["VibeDex","https://vibedex.ai/blog/best-ai-image-generator-game-art-2026"]] },
+  { n:"Recraft V4", by:"Recraft, 2026", kind:"api", lic:"tos", licT:"Điều khoản Recraft", cost:"Theo gói",
+    one:"Icon và UI phẳng, xuất SVG mở được trong Figma.",
+    pros:["Bản SVG xuất vector: phóng to không vỡ, sửa được trong Figma, Illustrator","Giữ một style cho cả bộ icon, banner, thẻ","Chữ ngắn (nhãn, tiêu đề) khá ổn"],
+    cons:["Hợp icon phẳng hơn symbol 3D bóng bẩy kiểu slot","Tên bản và gói SVG thay đổi theo thời gian (V4, V4 Pro, V4.1)","Logo chữ tùy chỉnh vẫn phải sửa tay"],
+    use:"Icon menu, HUD, icon cài đặt, bộ icon lobby",
+    how:["Node Recraft V4 trong Partner Nodes của ComfyUI, hoặc web Recraft","Chọn style, tả cả bộ icon trong một prompt: số lượng, nét, màu","Xuất SVG rồi mở trong Figma để chỉnh"],
+    promptText:"A set of 6 flat game UI icons for a slot game lobby: home, settings, sound, paytable, history and shop. Uniform 2px stroke, rounded corners, gold and deep purple palette, consistent size on a 24px grid.",
+    src:[["ComfyUI blog","https://blog.comfy.org/p/recraft-v4-now-available-in-comfyui"],["MindStudio","https://www.mindstudio.ai/blog/what-is-recraft-v4-vector-generate-svg-logos-icons-ai"]] },
+  { n:"Midjourney V8", by:"Midjourney, 2026", kind:"api", lic:"tos", licT:"Theo gói trả phí", cost:"Gói tháng",
+    one:"Mạnh nhất cho moodboard và chốt hướng art ở bước đầu.",
+    pros:["Thẩm mỹ mạnh, hợp tìm hướng art cho theme mới","Style reference (--sref) và style code để giữ một phong cách qua nhiều ảnh","V8.1 xuất 2K không cần upscale, nhanh hơn bản cũ"],
+    cons:["Không có trong Partner Nodes của ComfyUI: không nối vào pipeline tự động","Kiểm soát bố cục kém hơn ControlNet","Quyền dùng thương mại phụ thuộc gói: đọc điều khoản"],
+    use:"W1 moodboard, key art để chốt hướng với khách",
+    how:["Dùng trên midjourney.com","Sinh moodboard, lưu style code ưng ý","Đưa ảnh đã chọn vào ComfyUI làm ảnh tham chiếu cho W2"],
+    promptText:"ancient Egyptian slot game key art, golden scarab and lotus motifs, warm dusk light, polished mobile game style --ar 9:16 --sref [style code]",
+    src:[["Midjourney docs","https://docs.midjourney.com/docs/models"]] },
+];
+let tmK = "all";
+const sitPlain = id => SITS.find(s => s.id === id).segs?.map(x => x[1]).join(" ") || SITS.find(s => s.id === id).raw;
+function renderTop(){
+  const rows = TOP.map((m, i) => ({ m, i })).filter(({ m }) => tmK === "all" || m.kind === tmK);
+  $("#topModels").innerHTML = rows.map(({ m, i }) => {
+    const p = m.promptText || sitPlain(m.prompt);
+    return `<details class="mcard">
+      <summary><span class="rank">${i + 1}</span>
+        <span><span class="mc-name">${esc(m.n)}</span><span class="mc-by">${esc(m.by)}</span><span class="mc-one">${esc(m.one)}</span></span>
+        <span class="mc-badges"><span class="badge ${m.kind === "local" ? "b-ok" : "b-info"}">${m.kind === "local" ? "Chạy local" : "API / web"}</span>
+          <span class="badge ${m.lic === "ok" ? "b-ok" : "b-warn"}">${esc(m.licT)}</span><span class="badge b-info">${esc(m.cost)}</span></span>
+      </summary>
+      <div class="mc-body">
+        <div class="mc-cols"><div><h4>Ưu điểm</h4><ul>${m.pros.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
+          <div><h4>Hạn chế</h4><ul>${m.cons.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div></div>
+        <p><strong>Dùng cho:</strong> ${esc(m.use)}</p>
+        <h4>Cách dùng</h4><ol>${m.how.map(x => `<li>${esc(x)}</li>`).join("")}</ol>
+        <div class="out-label"><span>Prompt mẫu</span><button class="btn small copy" data-copy="tp-${i}">Sao chép</button></div>
+        <div class="code"><pre id="tp-${i}">${esc(p)}</pre></div>
+        <p class="mc-src">Nguồn: ${m.src.map(([t, u]) => `<a href="${u}" target="_blank" rel="noopener">${esc(t)}</a>`).join(", ")}</p>
+      </div></details>`;
+  }).join("");
+  $("#tmCount").textContent = `${rows.length}/${TOP.length} model`;
+  $$("#tmSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === tmK));
+}
+$("#tmSeg").addEventListener("click", e => { const b = e.target.closest("button"); if (b){ tmK = b.dataset.k; renderTop(); } });
+renderTop();
+
+/* ============================================================
+   LỘ TRÌNH + QA + TIẾN ĐỘ
+   ============================================================ */
+const allTasks = LEVELS.flatMap(l => l.tasks.map(t => ({ lv: l, id: t[0], text: t[1] })));
+$("#levels").innerHTML = LEVELS.map((l, i) => `
+  <details class="level" id="${l.id}" data-level="${l.id}">
+    <summary>
+      <span class="lv-num">${i}</span>
+      <span class="lv-title">${l.name}<span class="lv-meta">${l.hours}</span></span>
+      <span class="lv-right"><span class="js-lv-count">0/${l.tasks.length}</span><span class="meter"><span class="js-lv-bar"></span></span></span>
+    </summary>
+    <div class="lv-body">
+      <div class="out"><strong>Đầu ra:</strong> ${l.out}</div>
+      <div class="reads">Đọc trước: ${l.reads.map(([h, t]) => `<a href="${h}">${t}</a>`).join(", ")}</div>
+      <ul class="check">${l.tasks.map(([id, t]) => `<li><label><input type="checkbox" id="t-${id}" data-task="${id}"><span>${esc(t)}</span></label></li>`).join("")}</ul>
+      <div class="note-wrap"><label for="n-${l.id}">Ghi chú Level ${i}: kết quả, thông số, lỗi gặp</label>
+        <textarea id="n-${l.id}" data-note="${l.id}"></textarea><div class="saved" data-saved-for="${l.id}"></div></div>
+    </div>
+  </details>`).join("");
+
+const qaRow = ([id, t]) => `<li><label><input type="checkbox" data-qa="${id}"><span>${esc(t)}</span></label></li>`;
+$("#qa1").innerHTML = QA1.map(qaRow).join(""); $("#qa2").innerHTML = QA2.map(qaRow).join("");
+
+$$("[data-task]").forEach(c => c.checked = !!checks[c.dataset.task]);
+$$("[data-qa]").forEach(c => c.checked = !!qa[c.dataset.qa]);
+
+function updateProgress(){
+  const done = allTasks.filter(t => checks[t.id]).length, total = allTasks.length, pct = Math.round(done / total * 100);
+  $$(".js-bar").forEach(b => b.style.width = pct + "%");
+  $$(".js-done").forEach(e => e.textContent = done); $$(".js-total").forEach(e => e.textContent = total);
+  LEVELS.forEach(l => {
+    const el = document.getElementById(l.id), d = l.tasks.filter(t => checks[t[0]]).length;
+    el.querySelector(".js-lv-count").textContent = `${d}/${l.tasks.length}`;
+    el.querySelector(".js-lv-bar").style.width = (d / l.tasks.length * 100) + "%";
+    el.classList.toggle("done", d === l.tasks.length);
+  });
+  const next = allTasks.find(t => !checks[t.id]);
+  if (next){
+    $("#nextText").textContent = `Level ${LEVELS.indexOf(next.lv)}: ${next.text}`;
+    $("#nextBtn").dataset.task = next.id; $("#nextBtn").textContent = "Mở việc này";
+  } else {
+    $("#nextText").textContent = "Xong cả 6 level. Giờ là lúc đưa theme mini vào portfolio.";
+    delete $("#nextBtn").dataset.task; $("#nextBtn").textContent = "Xem lộ trình";
+  }
+  const q = Object.values(qa).filter(Boolean).length;
+  $("#qaCount").textContent = `${q}/${QA1.length + QA2.length} mục đạt`;
+}
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.dataset.task){ checks[t.dataset.task] = t.checked; store.set("checks", checks); updateProgress(); }
+  if (t.dataset.qa){ qa[t.dataset.qa] = t.checked; store.set("qa", qa); updateProgress(); }
+});
+$("#qaReset").addEventListener("click", () => { qa = {}; store.set("qa", qa); $$("[data-qa]").forEach(c => c.checked = false); updateProgress(); toast("Đã bỏ chọn checklist QA"); });
+
+/* Nút "Mở việc này": mở level chứa việc tiếp theo, cuộn tới và focus ô tích */
+$("#nextBtn").addEventListener("click", e => {
+  const id = e.currentTarget.dataset.task; if (!id) return;
+  e.preventDefault();
+  const box = document.getElementById("t-" + id); box.closest("details").open = true;
+  box.closest("li").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+  box.focus({ preventScroll: true });
+});
+
+/* Mở sẵn level đầu tiên chưa xong */
+(LEVELS.find(l => l.tasks.some(t => !checks[t[0]])) ? document.getElementById(LEVELS.find(l => l.tasks.some(t => !checks[t[0]])).id) : null)?.setAttribute("open", "");
+updateProgress();
+
+/* ============================================================
+   GHI CHÚ (tự lưu, có báo "Đã lưu")
+   ============================================================ */
+$$("[data-note]").forEach(el => el.value = notes[el.dataset.note] || "");
+document.addEventListener("input", e => {
+  const el = e.target; if (!el.dataset || !el.dataset.note) return;
+  const k = el.dataset.note; clearTimeout(el._t);
+  el._t = setTimeout(() => { // đợi người dùng ngừng gõ 400ms rồi mới lưu
+    notes[k] = el.value; const ok = store.set("notes", notes);
+    const s = document.querySelector(`[data-saved-for="${k}"]`);
+    if (s) s.textContent = ok ? "Đã lưu" : "Không lưu được: trình duyệt đang chặn bộ nhớ. Hãy xuất file .md";
+  }, 400);
+});
+$("#readClear").addEventListener("click", () => {
+  ["read-name","read-1","read-2","read-3","read-4"].forEach(k => { notes[k] = ""; const el = document.querySelector(`[data-note="${k}"]`); if (el) el.value = ""; });
+  store.set("notes", notes); toast("Đã xóa bài tập 4 dòng");
+});
+
+/* Xuất Markdown: tiến độ + ghi chú, để cất vào vault */
+function exportMd(){
+  const d = new Date(), pad = n => String(n).padStart(2, "0");
+  const day = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const done = allTasks.filter(t => checks[t.id]).length;
+  let md = `# Tiến độ ComfyUI cho game slot (${day})\n\nĐã xong ${done}/${allTasks.length} việc.\n`;
+  LEVELS.forEach((l, i) => {
+    md += `\n## Level ${i}: ${l.name}\n\n` + l.tasks.map(([id, t]) => `- [${checks[id] ? "x" : " "}] ${t}`).join("\n") + "\n";
+    if (notes[l.id]) md += `\n**Ghi chú:**\n\n${notes[l.id]}\n`;
+  });
+  if (["read-name","read-1","read-2","read-3","read-4"].some(k => notes[k])){
+    md += `\n## Bài tập đọc workflow\n\n- Workflow: ${notes["read-name"] || ""}\n- Đầu ra: ${notes["read-1"] || ""}\n- Sửa MODEL: ${notes["read-2"] || ""}\n- Sửa CONDITIONING: ${notes["read-3"] || ""}\n- Sửa LATENT / IMAGE: ${notes["read-4"] || ""}\n`;
+  }
+  if (notes.general) md += `\n## Ghi chú chung\n\n${notes.general}\n`;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([md], { type: "text/markdown" }));
+  a.download = `comfyui-tien-do-${day}.md`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast("Đã xuất file .md");
+}
+$("#exportBtn").addEventListener("click", exportMd);
+$("#resetBtn").addEventListener("click", () => {
+  if (!confirm("Xóa toàn bộ tiến độ, checklist và ghi chú trên trình duyệt này? Không hoàn tác được. Nên xuất file .md trước.")) return;
+  checks = {}; qa = {}; notes = {};
+  store.set("checks", checks); store.set("qa", qa); store.set("notes", notes);
+  $$("[data-task],[data-qa]").forEach(c => c.checked = false); $$("[data-note]").forEach(el => el.value = "");
+  updateProgress(); toast("Đã xóa");
+});
+
+/* ============================================================
+   DRAWER, MỤC LỤC MOBILE, THEME, SCROLLSPY
+   ============================================================ */
+const drawer = $("#drawer"), nScrim = $("#nScrim");
+function openNotes(){ drawer.classList.add("show"); nScrim.classList.add("show"); drawer.setAttribute("aria-hidden", "false"); setTimeout(() => $("#genNote").focus(), 50); }
+function closeNotes(){ drawer.classList.remove("show"); nScrim.classList.remove("show"); drawer.setAttribute("aria-hidden", "true"); }
+$$("[data-open-notes]").forEach(b => b.addEventListener("click", () => { closeSide(); openNotes(); }));
+$("#drawerClose").addEventListener("click", closeNotes); nScrim.addEventListener("click", closeNotes);
+
+const side = $("#side"), scrim = $("#scrim");
+function closeSide(){ side.classList.remove("show"); scrim.classList.remove("show"); $("#tocBtn").setAttribute("aria-expanded", "false"); }
+$("#tocBtn").addEventListener("click", () => { const on = !side.classList.contains("show"); side.classList.toggle("show", on); scrim.classList.toggle("show", on); $("#tocBtn").setAttribute("aria-expanded", on); });
+scrim.addEventListener("click", closeSide);
+document.addEventListener("keydown", e => { if (e.key === "Escape"){ closeNotes(); closeSide(); } });
+
+const applyTheme = t => t ? document.documentElement.setAttribute("data-theme", t) : document.documentElement.removeAttribute("data-theme");
+applyTheme(store.get("theme", ""));
+$("#themeBtn").addEventListener("click", () => {
+  const cur = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const next = cur === "dark" ? "light" : "dark"; applyTheme(next); store.set("theme", next);
+});
+
+/* Đánh dấu mục đang đọc trong mục lục */
+const tocLinks = $$("#toc a");
+const spy = new IntersectionObserver(entries => {
+  entries.forEach(en => {
+    if (!en.isIntersecting) return;
+    tocLinks.forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + en.target.id));
+  });
+}, { rootMargin: "-20% 0px -70% 0px" });
+$$("section.sec[id]").forEach(s => spy.observe(s));
+
+revealTarget(location.hash);
+</script>
+</body>
+</html>

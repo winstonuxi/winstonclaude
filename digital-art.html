@@ -1,0 +1,1571 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Digital art cho slot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Lexend: dễ đọc, hỗ trợ tiếng Việt. JetBrains Mono cho mã bài tập, tên file, tên layer -->
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300..700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   TOKENS
+   Ý tưởng: thang value (sáng → tối) là hệ thị giác của trang.
+   Level 0 → 6 tô theo thang xám từ sáng đến tối: càng học càng "đậm".
+   Màu nhấn duy nhất là vàng kim loại, vật liệu số 1 của art slot.
+   ============================================================ */
+:root{
+  --bg:#ECEDEC; --surface:#FBFBFA; --surface-2:#E3E4E2; --ink:#1C1C1E; --muted:#55575C; --faint:#85878B; --line:#D3D4D2;
+  --accent:#946508; --accent-soft:#F3E8CF; --accent-ink:#FFFFFF;
+  --ok:#1E7A60; --ok-soft:#DCEFE7; --warn:#A8501A; --warn-soft:#FBEBDD; --bad:#B8362A; --bad-soft:#FBE4E1;
+  /* Thang value cố định (không đổi theo theme vì đây là giá trị sáng tối thật) */
+  --v0:#F4F4F4; --v1:#CDCDCD; --v2:#A2A2A2; --v3:#777777; --v4:#4F4F4F; --v5:#2E2E2E; --v6:#141414;
+  --stage:#E3E4E2; --stage-dark:#17130C;
+  --font:"Lexend",system-ui,-apple-system,sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --zh:"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif;
+  --side:276px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#161616; --surface:#1F1F1F; --surface-2:#2A2A2A; --ink:#EDEDEB; --muted:#A9AAAC; --faint:#7A7C7F; --line:#343434;
+    --accent:#E2B04A; --accent-soft:#3A2E16; --accent-ink:#1A1306;
+    --ok:#6CCB9F; --ok-soft:#173127; --warn:#F0A060; --warn-soft:#3A2717; --bad:#F08A80; --bad-soft:#3A1F1C;
+    --stage:#2A2A2A;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#161616; --surface:#1F1F1F; --surface-2:#2A2A2A; --ink:#EDEDEB; --muted:#A9AAAC; --faint:#7A7C7F; --line:#343434;
+  --accent:#E2B04A; --accent-soft:#3A2E16; --accent-ink:#1A1306;
+  --ok:#6CCB9F; --ok-soft:#173127; --warn:#F0A060; --warn-soft:#3A2717; --bad:#F08A80; --bad-soft:#3A1F1C;
+  --stage:#2A2A2A;
+}
+
+/* ============================== BASE ============================== */
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;scroll-padding-top:24px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:300 16.5px/1.7 var(--font);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:var(--accent);text-underline-offset:2px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+code,.mono{font-family:var(--mono);font-size:.86em}
+p code,li code,td code{background:var(--surface-2);padding:1px 5px;border-radius:4px;white-space:nowrap}
+.zh{font-family:var(--zh);font-weight:400}
+h1,h2,h3,h4{letter-spacing:-.02em;line-height:1.2;margin:0;font-weight:600}
+h2{font-size:clamp(23px,2.8vw,29px)}
+h3{font-size:19px;margin:34px 0 10px}
+h4{font-size:16px;margin:20px 0 6px}
+p{margin:0 0 14px}
+ul,ol{margin:0 0 14px;padding-left:22px}
+li{margin:4px 0}
+strong,b{font-weight:600}
+button{font:inherit;color:inherit}
+
+/* ============================== LAYOUT ============================== */
+.app{display:grid;grid-template-columns:var(--side) minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:0;height:100vh;overflow-y:auto;border-right:1px solid var(--line);background:var(--surface);padding:22px 18px 18px;display:flex;flex-direction:column;gap:16px}
+.main{min-width:0;padding:28px clamp(16px,4vw,56px) 96px}
+.col{max-width:760px}
+.wide{max-width:1040px}
+
+.brand{font-weight:600;font-size:17px;line-height:1.25;text-decoration:none;color:var(--ink)}
+.brand small{display:block;font-weight:300;font-size:13px;color:var(--muted);margin-top:4px}
+.meter{height:6px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.meter span{display:block;height:100%;width:0;background:var(--ok);border-radius:99px;transition:width .3s}
+.prog-text{font-size:13px;color:var(--muted);margin-top:6px}
+.toc{display:flex;flex-direction:column;gap:12px;font-size:14px}
+.toc-group b{display:block;font-size:12.5px;font-weight:500;color:var(--faint);margin:0 0 3px 8px}
+.toc a{display:flex;gap:8px;padding:4px 8px;border-radius:6px;color:var(--muted);text-decoration:none;line-height:1.35}
+.toc a .n{font-family:var(--mono);font-size:11.5px;color:var(--faint);min-width:20px;padding-top:2px}
+.toc a:hover{background:var(--surface-2);color:var(--ink)}
+.toc a.on{background:var(--accent-soft);color:var(--ink);font-weight:500}
+.side-actions{margin-top:auto;display:flex;gap:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:38px;padding:0 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:14px;font-weight:500;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.small{height:32px;padding:0 10px;font-size:13px}
+.side-actions .btn{flex:1}
+.topbar{display:none}
+
+/* ============================== HERO ============================== */
+.hero{background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden;margin-bottom:52px}
+/* Thang value 5 bậc (giáo trình B, bài 3) làm dải mở đầu */
+.vscale{display:grid;grid-template-columns:repeat(5,1fr);font:500 11px/1 var(--mono)}
+.vscale span{padding:9px 10px;color:#fff}
+.vscale span:nth-child(1){background:#1A1A1A}.vscale span:nth-child(2){background:#474747}
+.vscale span:nth-child(3){background:#7A7A7A}.vscale span:nth-child(4){background:#B0B0B0;color:#1A1A1A}
+.vscale span:nth-child(5){background:#E8E8E8;color:#1A1A1A}
+.hero-in{padding:clamp(22px,4vw,44px)}
+.hero h1{font-size:clamp(32px,5.2vw,56px);font-weight:650;letter-spacing:-.035em;line-height:1.04;max-width:15ch}
+.hero .lede{font-size:clamp(16px,1.6vw,18px);color:var(--muted);max-width:62ch;margin:16px 0 24px}
+.next{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 20px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:32px;max-width:780px}
+.next p{margin:0}
+.next .lbl{font-size:13px;color:var(--muted);display:block}
+.next strong{font-weight:600}
+.next .meter{grid-column:1/-1}
+
+/* Bàn kiểm tra symbol */
+.checker{display:grid;grid-template-columns:minmax(260px,320px) minmax(0,1fr);gap:24px;align-items:start}
+.stage{position:relative;aspect-ratio:1;border-radius:14px;background:var(--stage);display:grid;place-items:center;border:1px solid var(--line);transition:background .2s}
+.stage.dark{background:var(--stage-dark)}
+.stage svg{width:86%;height:auto;transition:filter .2s,transform .2s,width .2s;overflow:visible}
+.stage svg[hidden]{display:none} /* SVG không tự ẩn theo thuộc tính hidden như thẻ HTML */
+.stage.small svg{width:64px}
+.stage.flip svg{transform:scaleX(-1)}
+.stage.gray svg{filter:grayscale(1)}
+.stage.sil svg{filter:brightness(0)}
+.stage.sil .fx{display:none}
+.stage.dark.sil svg{filter:brightness(0) invert(1)}
+.stage .tag{position:absolute;left:10px;bottom:8px;font:500 11px var(--mono);color:var(--faint)}
+.stage.dark .tag{color:#8B8270}
+.ctl{display:flex;flex-direction:column;gap:12px}
+.ctl-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ctl-row .lbl{font-size:13px;color:var(--muted);min-width:68px}
+.seg{display:inline-flex;flex-wrap:wrap;background:var(--surface-2);border-radius:10px;padding:3px;gap:2px}
+.seg button{border:0;background:none;color:var(--muted);font-size:13.5px;font-weight:500;padding:0 12px;height:34px;border-radius:8px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.tog{border:1px solid var(--line);background:var(--surface);border-radius:8px;height:34px;padding:0 12px;font-size:13.5px;font-weight:500;cursor:pointer;color:var(--muted)}
+.tog[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.explain{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:15px;min-height:120px}
+.explain b.t{display:block;margin-bottom:4px}
+.explain p:last-child{margin:0}
+
+/* ============================== SECTIONS ============================== */
+.part{margin:72px 0 10px;font-size:13px;font-weight:500;color:var(--faint);border-top:1px solid var(--line);padding-top:14px}
+section.sec{margin:0 0 64px}
+.sec-h{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
+.sec-h .num{font:500 15px var(--mono);color:var(--faint);min-width:26px}
+.lead{font-size:17px;color:var(--muted)}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14.5px;line-height:1.55}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{font-weight:500;font-size:13px;color:var(--muted);background:var(--surface-2);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:500}
+td.plain{font-weight:300}
+
+.callout{border-left:3px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 10px 10px 0;margin:0 0 18px;font-size:15px}
+.callout.warn{border-color:var(--warn);background:var(--warn-soft)}
+.callout.ok{border-color:var(--ok);background:var(--ok-soft)}
+.callout.bad{border-color:var(--bad);background:var(--bad-soft)}
+.callout p:last-child,.callout ul:last-child,.callout ol:last-child{margin-bottom:0}
+.callout b.t{display:block;margin-bottom:4px}
+
+.code{position:relative;margin:0 0 18px}
+.code pre{margin:0;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;padding-right:96px;overflow-x:auto;font:12.5px/1.65 var(--mono);white-space:pre-wrap;word-break:break-word}
+.code .copy{position:absolute;top:8px;right:8px}
+
+.badge{display:inline-block;font:500 11.5px/1 var(--font);padding:5px 8px;border-radius:5px;white-space:nowrap}
+.b-ok{background:var(--ok-soft);color:var(--ok)}
+.b-warn{background:var(--warn-soft);color:var(--warn)}
+.b-info{background:var(--accent-soft);color:var(--accent)}
+
+.tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 14px}
+.input,.select,textarea{font:inherit;font-weight:400;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.input,.select{height:40px;padding:0 12px;font-size:14.5px}
+.input{flex:1 1 220px;min-width:0}
+.count{font-size:13px;color:var(--faint)}
+textarea{width:100%;min-height:90px;padding:10px 12px;font-size:14.5px;line-height:1.5;resize:vertical}
+.saved{font-size:12px;color:var(--faint);height:16px;margin-top:4px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;margin:0 0 20px}
+.panel > h4:first-child{margin-top:0}
+.grid-f{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:12px}
+.field label{display:block;font-size:13px;font-weight:500;color:var(--muted);margin-bottom:5px}
+.field .input,.field .select{width:100%}
+.out-label{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:12px 0 6px;font-size:13px;font-weight:500;color:var(--muted)}
+
+/* Bước theo thứ tự (pipeline, workflow) */
+.flow{list-style:none;padding:0;margin:0 0 18px;counter-reset:f}
+.flow > li{counter-increment:f;position:relative;padding:12px 14px 12px 54px;border:1px solid var(--line);background:var(--surface);border-radius:10px;margin:0 0 8px}
+.flow > li::before{content:counter(f);position:absolute;left:14px;top:12px;width:26px;height:26px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;font:600 12px var(--mono);color:var(--ink)}
+.flow > li.gate{border-color:var(--accent)}
+.flow > li.gate::before{background:var(--accent);color:var(--accent-ink)}
+.flow .ft{font-weight:500}
+.flow .fz{font-family:var(--zh);color:var(--faint);font-size:13px;margin-left:6px}
+.flow .fd{display:block;font-size:14.5px;color:var(--muted);margin-top:2px}
+.flow .fo{display:block;font-size:13.5px;margin-top:4px}
+.gate-badge{display:inline-block;margin-left:8px;font-size:11.5px;font-weight:600;color:var(--accent)}
+
+/* Checklist */
+.check{list-style:none;padding:0;margin:0 0 12px}
+.check li{margin:0}
+.check label{display:flex;gap:11px;align-items:flex-start;padding:7px 8px;border-radius:8px;cursor:pointer;line-height:1.5}
+.check label:hover{background:var(--surface-2)}
+.check input{flex:none;width:19px;height:19px;margin:2px 0 0;accent-color:var(--ok);cursor:pointer}
+.check input:checked + span{color:var(--faint);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--faint) 60%,transparent)}
+.check .code-id{font-family:var(--mono);font-size:12px;color:var(--faint);margin-right:6px}
+
+/* Level: ô số tô theo thang value */
+.level{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin:0 0 12px}
+.level > summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 14px;align-items:center;padding:14px 16px}
+.level > summary::-webkit-details-marker{display:none}
+.lv-num{width:40px;height:40px;border-radius:9px;display:grid;place-items:center;font:600 18px var(--mono);background:var(--lv);color:var(--lvi);border:1px solid var(--line)}
+.lv-title{font-weight:600;font-size:17px}
+.lv-meta{font-size:13px;color:var(--muted);display:block;font-weight:300}
+.lv-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;font-size:13px;color:var(--muted)}
+.lv-right .meter{width:90px}
+.level.done .lv-right{color:var(--ok)}
+.lv-body{padding:0 18px 18px 70px}
+.lv-body .out{background:var(--bg);border-radius:8px;padding:10px 12px;font-size:14.5px;margin-bottom:10px}
+.lv-body .goal{font-size:15px;margin-bottom:8px}
+.reads{font-size:14px;color:var(--muted);margin-bottom:6px}
+.ai-rule{font-size:13.5px;color:var(--warn);margin-bottom:6px}
+.note-wrap label{display:block;font-size:13px;font-weight:500;color:var(--muted);margin:6px 0}
+
+/* Swatch bảng màu */
+.pal{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:0 0 6px}
+.sw{border-radius:8px;overflow:hidden;border:1px solid var(--line);background:var(--surface)}
+.sw i{display:block;height:54px}
+.sw span{display:block;padding:6px 8px;font-size:12px;line-height:1.35}
+.sw small{display:block;color:var(--faint);font:11px var(--mono)}
+
+/* Tab vật liệu */
+.mat-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.mat-tab{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 12px;font-size:14px;font-weight:500;cursor:pointer;color:var(--muted)}
+.mat-tab[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.mat-src{font-size:13px;color:var(--faint)}
+
+/* Planner bảng symbol */
+.planner td{padding:6px 8px}
+.planner .input{height:34px;font-size:14px;width:100%;min-width:110px}
+.planner td:first-child{white-space:nowrap;font-size:13.5px}
+
+/* Từ điển */
+.dict-zh{font-family:var(--zh);font-size:15px}
+
+details.merge{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin:0 0 24px}
+details.merge > summary{cursor:pointer;padding:14px 18px;font-weight:500;list-style:none;display:flex;justify-content:space-between;gap:12px}
+details.merge > summary::-webkit-details-marker{display:none}
+details.merge > summary::after{content:"+";color:var(--faint);font-size:20px;line-height:1}
+details.merge[open] > summary::after{content:"–"}
+details.merge .inner{padding:0 18px 6px}
+
+/* Drawer, toast */
+.scrim{position:fixed;inset:0;background:rgba(10,10,10,.42);opacity:0;pointer-events:none;transition:opacity .2s;z-index:40}
+.scrim.show{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;height:100%;width:min(440px,100%);background:var(--surface);border-left:1px solid var(--line);z-index:41;transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;padding:20px;gap:14px;overflow-y:auto}
+.drawer.show{transform:none}
+.drawer-h{display:flex;justify-content:space-between;align-items:center}
+.drawer textarea{min-height:220px}
+.drawer .row{display:flex;flex-wrap:wrap;gap:8px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;opacity:0;pointer-events:none;transition:all .2s;z-index:60}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){.drawer,.scrim,.toast,.meter span,.stage,.stage svg{transition:none}}
+
+/* ============================== RESPONSIVE ============================== */
+@media (max-width:980px){
+  .app{grid-template-columns:1fr}
+  .side{position:fixed;inset:0 auto 0 0;width:min(320px,88%);z-index:41;transform:translateX(-100%);transition:transform .25s ease;height:100%}
+  .side.show{transform:none}
+  .topbar{display:flex;position:sticky;top:0;z-index:30;align-items:center;gap:10px;padding:10px 16px;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .topbar .t{font-weight:600;font-size:15px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .topbar .meter{width:64px}
+  .main{padding-top:18px}
+  html{scroll-padding-top:70px}
+}
+@media (max-width:760px){
+  .checker{grid-template-columns:1fr}
+  .stage{max-width:320px;width:100%;margin:0 auto}
+  .next{grid-template-columns:1fr}
+  .next .btn{justify-self:start}
+  .vscale span{font-size:9.5px;padding:8px 6px}
+  .level > summary{grid-template-columns:auto minmax(0,1fr);padding:13px 14px}
+  .lv-right{grid-column:1/-1;flex-direction:row;align-items:center;justify-content:space-between}
+  .lv-body{padding:0 14px 16px}
+  .pal{grid-template-columns:repeat(3,minmax(0,1fr))}
+  th,td{padding:9px 10px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="btn small" id="tocBtn" aria-controls="side" aria-expanded="false">Mục lục</button>
+  <span class="t">Digital art cho game slot</span>
+  <div class="meter" aria-hidden="true"><span class="js-bar"></span></div>
+  <button class="btn small" data-open-notes>Ghi chú</button>
+</div>
+
+<div class="app">
+  <aside class="side" id="side" aria-label="Mục lục">
+    <a class="brand" href="#top">Digital art cho game slot<small>Từ cơ bản đến nâng cao, có AI</small></a>
+    <div>
+      <div class="meter" aria-hidden="true"><span class="js-bar"></span></div>
+      <div class="prog-text"><span class="js-done">0</span>/<span class="js-total">0</span> bài tập đã xong</div>
+    </div>
+    <nav class="toc" id="toc">
+      <div class="toc-group"><b>Bắt đầu</b>
+        <a href="#lo-trinh"><span class="n">0</span>Lộ trình 7 level</a>
+      </div>
+      <div class="toc-group"><b>Hiểu nghề</b>
+        <a href="#game-art"><span class="n">1</span>Game art khác tranh minh họa</a>
+        <a href="#team"><span class="n">2</span>Team art và asset cần làm</a>
+        <a href="#symbol"><span class="n">3</span>Các loại symbol và thứ bậc</a>
+        <a href="#style"><span class="n">4</span>Style ở thị trường châu Á</a>
+        <a href="#thi-truong"><span class="n">5</span>Ngành outsource TQ năm 2026</a>
+      </div>
+      <div class="toc-group"><b>Quy trình</b>
+        <a href="#pipeline"><span class="n">6</span>Dây chuyền 9 bước của studio</a>
+        <a href="#workflow"><span class="n">7</span>Vẽ một symbol từ brief đến file</a>
+      </div>
+      <div class="toc-group"><b>Kỹ năng vẽ</b>
+        <a href="#hinh-khoi"><span class="n">8</span>Hình khối và silhouette</a>
+        <a href="#value"><span class="n">9</span>Value: sáng, tối, điểm nhấn</a>
+        <a href="#mau"><span class="n">10</span>Màu và bảng màu</a>
+        <a href="#vat-lieu"><span class="n">11</span>Công thức vật liệu</a>
+        <a href="#meo"><span class="n">12</span>Blend mode, viền, glow, chữ</a>
+      </div>
+      <div class="toc-group"><b>Màn hình, UI, chuyển động</b>
+        <a href="#nen"><span class="n">13</span>Nền và khung reel</a>
+        <a href="#ui"><span class="n">14</span>Trạng thái nút và HUD</a>
+        <a href="#anim"><span class="n">15</span>Animation và VFX</a>
+      </div>
+      <div class="toc-group"><b>AI, giao file, portfolio</b>
+        <a href="#ai"><span class="n">16</span>AI và ComfyUI trong quy trình</a>
+        <a href="#file"><span class="n">17</span>File, layer, đặt tên</a>
+        <a href="#qc"><span class="n">18</span>Checklist trước khi giao</a>
+        <a href="#portfolio"><span class="n">19</span>Portfolio và art test</a>
+      </div>
+      <div class="toc-group"><b>Tra cứu</b>
+        <a href="#luyen"><span class="n">20</span>Cách luyện mỗi ngày</a>
+        <a href="#tu-dien"><span class="n">21</span>Từ điển Trung, Việt, Anh</a>
+        <a href="#nguon"><span class="n">22</span>Tài nguyên và nguồn</a>
+      </div>
+    </nav>
+    <div class="side-actions">
+      <button class="btn" data-open-notes>Ghi chú</button>
+      <button class="btn" id="themeBtn" aria-label="Đổi giao diện sáng hoặc tối">Sáng / tối</button>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <main class="main" id="top">
+
+    <!-- ============================== HERO ============================== -->
+    <header class="hero wide">
+      <div class="vscale" aria-label="Thang value 5 bậc"><span>0–20% bóng rất tối</span><span>20–40% bóng</span><span>40–60% trung</span><span>60–80% sáng</span><span>80–100% highlight</span></div>
+      <div class="hero-in">
+        <h1>Digital art cho game slot</h1>
+        <p class="lede">Giáo trình vẽ asset slot từ hình khối đến bộ theme hoàn chỉnh: symbol, nền, UI, chữ Big Win, file sẵn cho Spine, và cách đưa AI vào đúng chỗ. Tiến độ, ghi chú và bảng symbol của bạn lưu ngay trên trình duyệt này.</p>
+
+        <div class="next">
+          <p><span class="lbl">Bài tiếp theo của bạn</span><strong id="nextText">Đang tải…</strong></p>
+          <a class="btn primary" id="nextBtn" href="#lo-trinh">Mở bài này</a>
+          <div class="meter" aria-hidden="true"><span class="js-bar"></span></div>
+        </div>
+
+        <!-- Bàn kiểm tra: 3 cách tự kiểm tra của artist slot, áp lên một symbol thật -->
+        <div class="checker">
+          <div class="stage" id="stage">
+            <svg viewBox="0 0 240 240" aria-label="Symbol vương miện vàng" role="img" id="symGood">
+              <defs>
+                <radialGradient id="gGlow" cx="50%" cy="55%" r="50%"><stop offset="0" stop-color="#FFD978" stop-opacity=".55"/><stop offset="1" stop-color="#FFD978" stop-opacity="0"/></radialGradient>
+                <!-- Kim loại: các dải sáng tối xen kẽ theo khối (mặt trên phản chiếu trời nên sáng) -->
+                <linearGradient id="gBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF1B8"/><stop offset=".22" stop-color="#F2C85A"/><stop offset=".5" stop-color="#A8691C"/><stop offset=".68" stop-color="#E0A93E"/><stop offset="1" stop-color="#5E3210"/></linearGradient>
+                <linearGradient id="gBand" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE9A3"/><stop offset=".4" stop-color="#C8902A"/><stop offset=".75" stop-color="#7A4614"/><stop offset="1" stop-color="#C8902A"/></linearGradient>
+                <radialGradient id="gPearl" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#FFF8DD"/><stop offset=".45" stop-color="#F2C85A"/><stop offset="1" stop-color="#6E3C12"/></radialGradient>
+              </defs>
+              <circle class="fx" cx="120" cy="128" r="116" fill="url(#gGlow)"/>
+              <path d="M44 168 L38 98 L62 130 L80 72 L101 114 L120 44 L139 114 L160 72 L178 130 L202 98 L196 168 Z" fill="url(#gBody)" stroke="#3A1E08" stroke-width="5" stroke-linejoin="round"/>
+              <path d="M42 162 Q120 184 198 162 L196 196 Q120 216 44 196 Z" fill="url(#gBand)" stroke="#3A1E08" stroke-width="5" stroke-linejoin="round"/>
+              <g stroke="#3A1E08" stroke-width="3.5"><circle cx="38" cy="94" r="9" fill="url(#gPearl)"/><circle cx="80" cy="66" r="10" fill="url(#gPearl)"/><circle cx="120" cy="38" r="11" fill="url(#gPearl)"/><circle cx="160" cy="66" r="10" fill="url(#gPearl)"/><circle cx="202" cy="94" r="9" fill="url(#gPearl)"/></g>
+              <!-- Đá quý: mỗi mặt cắt một value phẳng; mặt dưới-phải (xa nguồn sáng) lại sáng vì ánh sáng đi ra ở đó -->
+              <g stroke="#3A0610" stroke-width="1.2" stroke-linejoin="round">
+                <polygon points="120,110 141,122 141,146 120,158 99,146 99,122" fill="#C21E35" stroke-width="3"/>
+                <polygon points="99,122 120,110 120,123 110,129" fill="#FFB3BA"/>
+                <polygon points="120,110 141,122 130,129 120,123" fill="#E0364C"/>
+                <polygon points="141,122 141,146 130,140 130,129" fill="#9E0F25"/>
+                <polygon points="141,146 120,158 120,146 130,140" fill="#FF6B7D"/>
+                <polygon points="120,158 99,146 110,140 120,146" fill="#D42840"/>
+                <polygon points="99,146 99,122 110,129 110,140" fill="#B3182F"/>
+                <polygon points="120,123 130,129 130,140 120,146 110,140 110,129" fill="#E8344B"/>
+                <polygon points="110,129 120,123 118,131 112,134" fill="#FFE3E6" stroke="none"/>
+              </g>
+              <g stroke="#3A0610" stroke-width="2.5"><circle cx="78" cy="186" r="6" fill="#D42840"/><circle cx="162" cy="186" r="6" fill="#D42840"/></g>
+              <!-- Highlight cạnh trái (hướng về nguồn sáng trên-trái) và rim light xanh ngọc cạnh phải -->
+              <path d="M41 104 L46 160" stroke="#FFF8DD" stroke-width="3.5" stroke-linecap="round" opacity=".9"/>
+              <path d="M66 136 L80 80" stroke="#FFF8DD" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>
+              <path d="M199 104 L194 164" stroke="#7FE0D0" stroke-width="2.5" stroke-linecap="round" opacity=".85"/>
+              <path d="M52 170 Q120 188 186 170" stroke="#FFF4CC" stroke-width="2.5" fill="none" opacity=".75"/>
+              <!-- Sparkle 4 cánh, cánh ngang dài hơn cánh dọc -->
+              <path class="fx" d="M58 44 L60.5 55.5 L80 58 L60.5 60.5 L58 72 L55.5 60.5 L36 58 L55.5 55.5 Z" fill="#FFFFFF"/>
+            </svg>
+            <svg viewBox="0 0 240 240" aria-label="Symbol vương miện bản lỗi value" role="img" id="symBad" hidden>
+              <path d="M44 168 L38 98 L62 130 L80 72 L101 114 L120 44 L139 114 L160 72 L178 130 L202 98 L196 168 Z" fill="#C9A24C" stroke="#B89650" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M42 162 Q120 184 198 162 L196 196 Q120 216 44 196 Z" fill="#C29C50" stroke="#B89650" stroke-width="2"/>
+              <g fill="#CDA854"><circle cx="38" cy="94" r="9"/><circle cx="80" cy="66" r="10"/><circle cx="120" cy="38" r="11"/><circle cx="160" cy="66" r="10"/><circle cx="202" cy="94" r="9"/></g>
+              <polygon points="120,110 141,122 141,146 120,158 99,146 99,122" fill="#E08A7E"/>
+              <g fill="#E08A7E"><circle cx="78" cy="186" r="6"/><circle cx="162" cy="186" r="6"/></g>
+            </svg>
+            <span class="tag" id="stageTag">256px</span>
+          </div>
+          <div class="ctl">
+            <div class="ctl-row"><span class="lbl">Phiên bản</span>
+              <div class="seg" id="verSeg" role="group" aria-label="Phiên bản symbol">
+                <button data-v="good" aria-pressed="true">Bản đạt</button><button data-v="bad" aria-pressed="false">Bản lỗi value</button>
+              </div></div>
+            <div class="ctl-row"><span class="lbl">Xem dạng</span>
+              <div class="seg" id="viewSeg" role="group" aria-label="Chế độ xem">
+                <button data-m="color" aria-pressed="true">Màu</button><button data-m="gray" aria-pressed="false">Đen trắng</button><button data-m="sil" aria-pressed="false">Silhouette</button>
+              </div></div>
+            <div class="ctl-row"><span class="lbl">Thêm</span>
+              <button class="tog" data-t="small" aria-pressed="false">Thu về 64px</button>
+              <button class="tog" data-t="flip" aria-pressed="false">Lật ngang</button>
+              <button class="tog" data-t="dark" aria-pressed="false">Nền tối</button>
+            </div>
+            <div class="explain" id="explain" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ============================== GỘP TÀI LIỆU ============================== -->
+    <details class="merge col">
+      <summary>Trang này gộp 2 giáo trình thế nào (12 điểm khác nhau và lựa chọn cuối)</summary>
+      <div class="inner">
+        <p><b>A</b> là note trong vault <code>03 - resources/giao-trinh-digital-art-slot-2026-11-08.md</code>: 7 level, có nguồn, quy trình studio TQ, công thức vẽ. <b>B</b> là file tải về <code>gambling_digital_artist_lessons_detailed.md</code>: 20 bài, mỗi bài có lý thuyết, ví dụ, bài tập, tiêu chí. Trang dùng khung của A làm xương sống vì A có nguồn và số giờ, rồi đưa phần giảng giải và bài tập của B vào đúng chỗ.</p>
+        <div class="tbl"><table>
+          <thead><tr><th>Chủ đề</th><th>A</th><th>B</th><th>Trang này chọn</th></tr></thead>
+          <tbody>
+            <tr><td>Khung lộ trình</td><td class="plain">7 level, khoảng 300 giờ, bài tập có mã B1.1…</td><td class="plain">20 bài trong 10 phần</td><td class="plain">7 level của A. Lý thuyết của B vào các mục kỹ năng, bài tập của B vào checklist từng level</td></tr>
+            <tr><td>Lịch học</td><td class="plain">Theo giờ mỗi tuần (50, 30, 20 tuần)</td><td class="plain">12 tuần</td><td class="plain">Có máy tính nhịp học. Lịch 12 tuần của B cần khoảng 25 giờ/tuần theo số giờ của A, nên chỉ dùng làm thứ tự tham khảo</td></tr>
+            <tr><td>Thứ tự lên màu</td><td class="plain">Value xám trước, lên màu sau</td><td class="plain">Tô màu phẳng trước, rồi sáng tối</td><td class="plain">Mặc định value trước, vì symbol phải đọc được ở cỡ nhỏ. Cách của B là cách thứ hai; bài B2.3 so sánh cả hai</td></tr>
+            <tr><td>Quy trình</td><td class="plain">Dây chuyền 9 bước của studio</td><td class="plain">10 bước vẽ 1 symbol, 11 bước pipeline</td><td class="plain">Tách 2 tầng như bài 14 của B: pipeline của studio (9 bước A) và workflow của một người (10 bước B)</td></tr>
+            <tr><td>Loại symbol</td><td class="plain">High, low, Wild, Scatter, Bonus</td><td class="plain">Thêm mid-pay, multiplier</td><td class="plain">Bảng đầy đủ của B, luật thị giác của A</td></tr>
+            <tr><td>Trạng thái nút</td><td class="plain">normal, pressed, disabled, thêm hover cho desktop</td><td class="plain">Thêm loading, spinning, auto active</td><td class="plain">Bắt buộc 3 trạng thái. Nút Spin thêm spinning và auto active</td></tr>
+            <tr><td>Idle loop</td><td class="plain">2–5 giây (có nguồn)</td><td class="plain">2–4 giây</td><td class="plain">2–5 giây theo nguồn của A</td></tr>
+            <tr><td>Vật liệu</td><td class="plain">8 vật liệu, công thức vàng, đá quý, ngọc</td><td class="plain">Vàng, đá, ngọc, gỗ</td><td class="plain">Gộp, thêm cách vẽ đá và gỗ của B</td></tr>
+            <tr><td>Đặt tên file</td><td class="plain">Tiền tố theo loại: <code>sym_</code>, <code>bg_</code>, <code>btn_</code>…</td><td class="plain"><code>[game]_[type]_[name]_[state]_[size]_[version]</code></td><td class="plain">Folder là tên theme. Tên file mở đầu bằng tiền tố của A, thêm state, size, version của B</td></tr>
+            <tr><td>Cấu trúc PSD</td><td class="plain">Group theo bộ phận chuyển động (cho Spine)</td><td class="plain">Group theo bước, <code>00_DOC</code> → <code>10_EXPORT</code></td><td class="plain">File làm việc chia theo bước (B). File giao animator chia theo bộ phận (A)</td></tr>
+            <tr><td>Prompt AI</td><td class="plain">Dẫn sang note ComfyUI</td><td class="plain">Khung prompt dạng tag kèm prompt âm</td><td class="plain">Giữ khung của B, dẫn sang trang hướng dẫn ComfyUI cho công thức từng model</td></tr>
+            <tr><td>Theme bài tập</td><td class="plain">Lồng đèn rồng (<span class="zh">国风</span>)</td><td class="plain">Aztec, Ai Cập, Neon, Rồng</td><td class="plain">Giữ làm theme luyện tập. Đưa lên portfolio thì đặt tên brand riêng và kiểm tra không trùng game thật</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <div class="col">
+      <div class="callout warn"><b class="t">Phạm vi</b>Chỉ vẽ và thiết kế asset. Không bàn vận hành cờ bạc, không bàn RTP. Chỉ làm asset cho brand tự đặt, không dùng IP hay logo của game thật. Chỗ ghi “kinh nghiệm nghề” là cách làm phổ biến nhưng chưa có tài liệu công khai. Số giờ và mã màu đều là ước tính.</div>
+    </div>
+
+    <!-- ============================== LỘ TRÌNH ============================== -->
+    <section class="sec col" id="lo-trinh">
+      <div class="sec-h"><span class="num">0</span><h2>Lộ trình 7 level</h2></div>
+      <p class="lead">Khoảng 300 giờ (ước tính). Mỗi level kết thúc bằng một bộ asset thật. Học xong Level 3 (khoảng 140 giờ) là có thể nhận việc nhỏ: low symbol, icon coin hoặc đá quý, nút UI (nhận định của A).</p>
+      <div class="callout"><b class="t">Lợi thế của bạn</b>Đã giỏi UI, typography, logo, branding. Phần cần bù: <strong>value, ánh sáng, vật liệu, vẽ nhân vật và động vật</strong>. Level 5 là phần có lợi thế, Level 1, 2, 4 là phần phải đầu tư nhiều nhất.</div>
+
+      <div class="panel">
+        <h4>Tính nhịp học</h4>
+        <div class="tools" style="margin-bottom:8px">
+          <label class="field" style="flex:0 0 180px"><span style="display:block;font-size:13px;font-weight:500;color:var(--muted);margin-bottom:5px">Số giờ mỗi tuần</span>
+            <input class="input" id="pace" type="number" min="1" max="60" value="6" style="width:100%"></label>
+          <p class="count" style="margin:22px 0 0;flex:1 1 220px" id="paceSum"></p>
+        </div>
+        <div class="tbl" style="margin:0"><table>
+          <thead><tr><th>Level</th><th>Giờ</th><th>Xong vào cuối tuần</th></tr></thead>
+          <tbody id="paceTable"></tbody>
+        </table></div>
+        <p class="count" style="margin:10px 0 0">Quỹ học hiện tại (khoảng 1 giờ/ngày) đang dành cho UX, tiếng Anh, tiếng Thái. Lấy giờ cho giáo trình này từ quỹ học, hay từ quỹ 44 giờ làm việc (coi như chuẩn bị cho acehaus), là quyết định của bạn.</p>
+      </div>
+
+      <h3>Luật dùng AI khi học</h3>
+      <ul>
+        <li><strong>Level 1–2:</strong> bài tập vẽ tay 100%. AI chỉ để tạo ảnh tham chiếu. Không tự thấy lỗi value thì cũng không sửa được ảnh AI.</li>
+        <li><strong>Level 3–4:</strong> vẽ tay trước, làm lại cùng bài với AI, rồi so sánh.</li>
+        <li><strong>Level 5–6:</strong> dùng AI theo quy trình sản xuất ở <a href="#ai">mục 16</a>.</li>
+      </ul>
+
+      <h3>7 level</h3>
+      <p class="count">Ô số của mỗi level tô theo thang value, từ sáng (Level 0) đến tối (Level 6). Mỗi bài chưa đạt tiêu chí thì chưa mở bài mới.</p>
+      <div id="levels"></div>
+
+      <details class="merge" style="margin-top:20px">
+        <summary>Lịch 12 tuần của giáo trình B (để tham khảo thứ tự)</summary>
+        <div class="inner">
+          <p class="count">Theo số giờ ước tính của A, làm hết trong 12 tuần cần khoảng 25 giờ mỗi tuần. Dùng bảng này để biết nên học gì trước, không phải lịch bắt buộc.</p>
+          <div class="tbl"><table>
+            <thead><tr><th>Tuần</th><th>Nội dung</th><th>Đầu ra</th><th>Thuộc level</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td class="plain">Nền tảng</td><td class="plain">20 thumbnail</td><td class="plain">1</td></tr>
+              <tr><td>2</td><td class="plain">Digital painting</td><td class="plain">10 icon vật phẩm</td><td class="plain">1–2</td></tr>
+              <tr><td>3</td><td class="plain">Icon design</td><td class="plain">10 icon game</td><td class="plain">2</td></tr>
+              <tr><td>4</td><td class="plain">Symbol slot cơ bản</td><td class="plain">6 low symbol</td><td class="plain">3</td></tr>
+              <tr><td>5</td><td class="plain">High, Wild, Scatter</td><td class="plain">6 symbol chính</td><td class="plain">3–4</td></tr>
+              <tr><td>6</td><td class="plain">Style frame</td><td class="plain">1 style frame</td><td class="plain">3</td></tr>
+              <tr><td>7</td><td class="plain">Nền base game</td><td class="plain">1 nền</td><td class="plain">5</td></tr>
+              <tr><td>8</td><td class="plain">Nền bonus</td><td class="plain">2 nền</td><td class="plain">5</td></tr>
+              <tr><td>9</td><td class="plain">UI kit</td><td class="plain">1 UI kit</td><td class="plain">5</td></tr>
+              <tr><td>10</td><td class="plain">Animation</td><td class="plain">1 animation Wild</td><td class="plain">6</td></tr>
+              <tr><td>11</td><td class="plain">AI và ComfyUI</td><td class="plain">1 bộ concept</td><td class="plain">6</td></tr>
+              <tr><td>12</td><td class="plain">Case study</td><td class="plain">1 gói art slot</td><td class="plain">6</td></tr>
+            </tbody>
+          </table></div>
+        </div>
+      </details>
+    </section>
+
+    <!-- ============================== HIỂU NGHỀ ============================== -->
+    <div class="part col">Hiểu nghề</div>
+
+    <section class="sec col" id="game-art">
+      <div class="sec-h"><span class="num">1</span><h2>Game art khác tranh minh họa</h2></div>
+      <p class="lead">Artist slot không vẽ một bức tranh đẹp. Họ làm asset để lập trình viên đưa vào engine, hiển thị đúng trên màn hình và chạy cùng gameplay.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Tiêu chí</th><th>Tranh minh họa</th><th>Game art, slot art</th></tr></thead>
+        <tbody>
+          <tr><td>Mục đích</td><td class="plain">Truyền cảm xúc, kể chuyện, trang trí</td><td class="plain">Phục vụ gameplay và trải nghiệm người chơi</td></tr>
+          <tr><td>Kích thước xem</td><td class="plain">Thường xem lớn</td><td class="plain">Phải đọc được ở cỡ nhỏ</td></tr>
+          <tr><td>Cấu trúc</td><td class="plain">Vẽ liền khối được</td><td class="plain">Tách layer để animation</td></tr>
+          <tr><td>Tương tác</td><td class="plain">Người xem chỉ nhìn</td><td class="plain">Người chơi nhìn, bấm, thắng, thua</td></tr>
+          <tr><td>Kỹ thuật</td><td class="plain">Tự do hơn</td><td class="plain">Theo brief, engine, hiệu năng</td></tr>
+          <tr><td>File giao</td><td class="plain">Ảnh hoàn chỉnh</td><td class="plain">PNG/WebP, PSD phân lớp, sprite, atlas</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Ví dụ: symbol “Rồng vàng” cần gì</h3>
+      <ul>
+        <li>Nhìn rõ ở 64px, 128px, 256px. Không nhầm với symbol khác.</li>
+        <li>Màu và ánh sáng khớp với nền.</li>
+        <li>Tách được layer để làm mắt sáng, lửa, khói. Có trạng thái normal, win, glow.</li>
+        <li>Không quá nặng khi xuất file.</li>
+      </ul>
+      <h3>7 luật thị giác của art slot</h3>
+      <ol>
+        <li><strong>Đọc được trong chớp mắt.</strong> Người chơi nhận ra symbol ngay lúc reel dừng: hình rõ, tương phản cao, viền sạch, cả bộ cùng style.</li>
+        <li><strong>Hình dáng quan trọng hơn màu.</strong> Tô đen vẫn nhận ra mới đạt. Nhân vật cần silhouette đọc được ở 64px.</li>
+        <li><strong>Nhìn là biết giá trị.</strong> High symbol nhiều chi tiết, kim loại, đá quý, màu ấm rực. Low symbol phẳng và đơn giản hơn. Vàng báo hiệu đồ cao cấp, neon tương phản báo hiệu tính năng bonus.</li>
+        <li><strong>Một nguồn sáng cho cả game</strong>, ví dụ trên-trái 45° (kinh nghiệm nghề).</li>
+        <li><strong>Nền nhường sân khấu cho reel.</strong> Chia lớp xa gần, chi tiết xa được đơn giản hóa, tương phản thấp hơn symbol.</li>
+        <li><strong>Phóng đại.</strong> Phản chiếu, glow, viền đều mạnh hơn ngoài đời vì màn hình điện thoại nhỏ.</li>
+        <li><strong>Vẽ to, xem nhỏ.</strong> Vẽ ở 2–4 lần cỡ giao, luôn mở một cửa sổ phụ hiển thị 128px (kinh nghiệm nghề).</li>
+      </ol>
+      <p class="count">Nguồn luật 1, 2, 3, 5, 6: <a href="https://inkration.com/the-art-of-game-art-how-casino-and-slot-visuals-are-really-made/" target="_blank" rel="noopener">Inkration</a>.</p>
+    </section>
+
+    <section class="sec col" id="team">
+      <div class="sec-h"><span class="num">2</span><h2>Team art và asset cần làm</h2></div>
+      <div class="tbl"><table>
+        <thead><tr><th>Vai trò</th><th>Làm gì</th><th>Với bạn</th></tr></thead>
+        <tbody>
+          <tr><td>Art Director, Lead <span class="zh">主美</span></td><td class="plain">Chốt style, viết style guide, duyệt từng bước</td><td class="plain">Đích đến lâu dài</td></tr>
+          <tr><td>Concept artist <span class="zh">原画师</span></td><td class="plain">Nhân vật, high symbol, nền, concept theme</td><td class="plain"><strong>Phần cần học nhiều nhất</strong></td></tr>
+          <tr><td>UI artist <span class="zh">UI美术</span></td><td class="plain">Khung reel, nút, panel, paytable, logo, chữ Big Win</td><td class="plain">Đã có lợi thế</td></tr>
+          <tr><td>Spine animator <span class="zh">动效师</span></td><td class="plain">Rig, idle và win cho symbol, nhân vật, Big Win</td><td class="plain">Học mức cơ bản (Level 6)</td></tr>
+          <tr><td>VFX artist <span class="zh">特效师</span></td><td class="plain">Particle, glow, coin bay, chuyển cảnh</td><td class="plain">Biết đủ để chuẩn bị sprite</td></tr>
+          <tr><td>Technical artist <span class="zh">技术美术</span></td><td class="plain">Giới hạn kỹ thuật, atlas, pipeline, công cụ AI</td><td class="plain">Phần AI pipeline</td></tr>
+        </tbody>
+      </table></div>
+      <p>Ở studio nhỏ hoặc agency, một người “2D artist” thường ôm cả concept, symbol, UI và logo, còn Spine animator làm riêng (kinh nghiệm nghề). Đây là vị trí hợp với acehaus.</p>
+      <h3>Một game slot cần những asset nào</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>Nhóm</th><th>Asset</th><th>Kỹ năng chính</th></tr></thead>
+        <tbody>
+          <tr><td>Symbol</td><td class="plain">4–6 high, 4–6 low, Wild, Scatter, Bonus/Coin</td><td class="plain">Render vật thể, vật liệu, nhân vật</td></tr>
+          <tr><td>Môi trường</td><td class="plain">Nền base game, nền free spin, khung reel</td><td class="plain">Bố cục, phối cảnh, không khí</td></tr>
+          <tr><td>UI</td><td class="plain">Nút Spin, Auto, Bet, Buy Feature, panel, paytable</td><td class="plain">UI, vật liệu, trạng thái nút</td></tr>
+          <tr><td>Chữ</td><td class="plain">Logo game, Big/Mega/Super Win, bộ chữ số tiền thắng</td><td class="plain">Typography, hiệu ứng chữ</td></tr>
+          <tr><td>Màn feature</td><td class="plain">Intro free spin, màn tổng kết, bonus game</td><td class="plain">Bố cục, ánh sáng, cảm xúc</td></tr>
+          <tr><td>Marketing</td><td class="plain">Icon game ở lobby, banner, thumbnail</td><td class="plain">Key art, bố cục</td></tr>
+          <tr><td>Chuyển động</td><td class="plain">Animation symbol, Big Win, VFX</td><td class="plain">Tách layer, Spine, sprite FX</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section class="sec col" id="symbol">
+      <div class="sec-h"><span class="num">3</span><h2>Các loại symbol và thứ bậc</h2></div>
+      <p class="lead">Symbol là hình trên các cột quay. Người chơi nhìn symbol để biết mình thắng, thua, hay vừa mở bonus.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Loại</th><th>Vai trò</th><th>Đặc điểm</th></tr></thead>
+        <tbody>
+          <tr><td>Low-pay</td><td class="plain">Symbol thường, xuất hiện nhiều</td><td class="plain">Đơn giản, dễ nhận. Thường là A K Q J 10 hoặc đá quý</td></tr>
+          <tr><td>Mid-pay</td><td class="plain">Giá trị trung bình</td><td class="plain">Chi tiết vừa phải</td></tr>
+          <tr><td>High-pay</td><td class="plain">Giá trị cao</td><td class="plain">Đẹp, chi tiết, nhiều vàng nhất, nổi nhất</td></tr>
+          <tr><td>Wild</td><td class="plain">Thay thế symbol khác</td><td class="plain">Rất nổi, màu tương phản, có plate riêng. Chữ WILD set font tay</td></tr>
+          <tr><td>Scatter</td><td class="plain">Mở free spin hoặc bonus</td><td class="plain">Nhận ra tức thì</td></tr>
+          <tr><td>Bonus</td><td class="plain">Mở màn bonus</td><td class="plain">Có hiệu ứng, tính năng rõ</td></tr>
+          <tr><td>Multiplier</td><td class="plain">Nhân tiền thưởng</td><td class="plain">Số x2, x3, x5 rõ ràng, set chữ tay</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Luật thứ bậc trong một bộ</h3>
+      <ul>
+        <li>High-pay nổi nhất. Wild và Scatter gần bằng high-pay.</li>
+        <li>Mid-pay chi tiết trung bình. Low-pay đơn giản và dễ đọc. <strong>Low-pay không được đẹp hơn high-pay.</strong></li>
+        <li>Nền không được lấn át symbol.</li>
+        <li>Cả bộ cùng khung, cùng tâm, cùng khoảng trống quanh viền, cùng độ dày viền.</li>
+      </ul>
+
+      <div class="panel">
+        <h4>Bảng phân loại symbol của bạn (bài tập Level 3)</h4>
+        <p class="count" style="margin-top:-2px">Theme gợi ý: Ai Cập. Chưa cần vẽ, chỉ điền tên, màu chủ đạo, mức chi tiết. Tự lưu.</p>
+        <div class="field" style="margin-bottom:10px"><label for="planTheme">Theme</label><input class="input" id="planTheme" data-note="plan-theme" placeholder="Ví dụ: Ai Cập, lồng đèn rồng…" style="width:100%"></div>
+        <div class="tbl planner" style="margin:0"><table>
+          <thead><tr><th>Loại</th><th>Tên symbol</th><th>Màu chủ đạo</th><th>Mức chi tiết</th></tr></thead>
+          <tbody id="planTable"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <section class="sec col" id="style">
+      <div class="sec-h"><span class="num">4</span><h2>Style hay gặp ở thị trường châu Á</h2></div>
+      <div class="tbl"><table>
+        <thead><tr><th>Style</th><th>Đặc điểm</th><th>Cách làm</th><th>Độ khó</th></tr></thead>
+        <tbody>
+          <tr><td>Bóng khối kiểu 3D <span class="zh">3D渲染 + 2D精修</span></td><td class="plain">Khối căng bóng, vật liệu thật, ánh sáng đẹp</td><td class="plain">Dựng khối trong Blender/C4D, render, vẽ đè trong Photoshop. Hoặc vẽ tay giả khối 3D</td><td class="plain">Trung bình</td></tr>
+          <tr><td>Vẽ dày <span class="zh">厚涂</span></td><td class="plain">Bán thực tế, nét cọ dày, chất liệu giàu</td><td class="plain">Vẽ tay hoàn toàn, value trước rồi màu</td><td class="plain">Cao</td></tr>
+          <tr><td>Cartoon, chibi <span class="zh">Q版</span></td><td class="plain">Đầu to (cao 2–3 đầu), màu tươi, viền rõ</td><td class="plain">Vẽ tay hoặc 3D đơn giản</td><td class="plain">Thấp đến trung bình</td></tr>
+          <tr><td>Quốc phong, quốc triều <span class="zh">国风 / 国潮</span></td><td class="plain">Đỏ son, vàng, mây lành, rồng, lân, Thần Tài, nén vàng</td><td class="plain">Một trong các cách trên, cộng họa tiết truyền thống</td><td class="plain">Trung bình</td></tr>
+          <tr><td>Cel-shading <span class="zh">赛璐璐</span></td><td class="plain">Bóng cắt sắc, ít chuyển màu</td><td class="plain">Vẽ tay. Ít gặp ở slot</td><td class="plain">Trung bình</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout ok"><b class="t">Style đề xuất cho portfolio đầu tiên</b>Bóng khối kiểu 3D cộng <span class="zh">国风</span>, vẽ tay. Hợp thị trường châu Á, AI hỗ trợ tốt nhất ở style này vì khối và vật liệu rõ. Đúng quyết định acehaus chỉ làm 2D: nếu cần, chỉ dùng Blender dựng khối thô làm tham chiếu ánh sáng. Style <span class="zh">厚涂</span> để sau, khi value và vật liệu đã chắc.</div>
+      <p>Xem game của các provider lớn ở châu Á để học <strong>cách làm cho dễ đọc và cách bố cục</strong>. Không bắt chước, không train LoRA từ art của họ.</p>
+    </section>
+
+    <section class="sec col" id="thi-truong">
+      <div class="sec-h"><span class="num">5</span><h2>Ngành outsource art TQ năm 2026</h2></div>
+      <p class="lead">Theo <a href="https://news.qq.com/rain/a/20261102A0BM1J00" target="_blank" rel="noopener">Tencent News (02/11/2026)</a>, viết về Thành Đô, “thành phố outsource art” của ngành game TQ.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Năm</th><th>Khách yêu cầu gì về AI</th></tr></thead>
+        <tbody>
+          <tr><td>2021</td><td class="plain">Cấm dùng AI</td></tr>
+          <tr><td>2025</td><td class="plain">Cho dùng, nhưng phải vẽ tay lại, không giao thẳng ảnh AI</td></tr>
+          <tr><td>2026</td><td class="plain">Nhiều đơn cho dùng AI trực tiếp, nhưng deadline bị cắt một nửa</td></tr>
+        </tbody>
+      </table></div>
+      <ul>
+        <li>AI đổi cách làm nhưng gần như không rút ngắn thời gian thật, vì vẫn phải sửa và làm lại.</li>
+        <li>Kỹ năng còn giữ giá: <strong>vẽ tay và sửa tinh</strong>, VFX, concept, thiết kế động tác chính. Sản xuất hàng loạt đơn giản đang bị ép giá.</li>
+        <li>Giá tham khảo: khoảng 1.000 tệ/người-ngày ở Thượng Hải, khoảng 900 tệ ở Thành Đô.</li>
+        <li>Xu hướng: nhận <strong>gói trọn</strong> (<span class="zh">整包</span>) theo phiên bản game thay vì làm lẻ từng asset.</li>
+      </ul>
+      <div class="callout"><b class="t">Ý nghĩa cho acehaus</b>Đừng bán “ảnh AI giá rẻ”, đó là phần đang bị ép giá. Bán <strong>gói trọn một theme</strong>: style guide, symbol, UI, logo, file sẵn cho Spine. AI giúp làm nhanh, còn chất lượng do tay bạn quyết định.</div>
+    </section>
+
+    <!-- ============================== QUY TRÌNH ============================== -->
+    <div class="part col">Quy trình</div>
+
+    <section class="sec col" id="pipeline">
+      <div class="sec-h"><span class="num">6</span><h2>Dây chuyền 9 bước của studio</h2></div>
+      <p class="lead"><strong>Pipeline</strong> là dây chuyền của cả team. <strong>Workflow</strong> là trình tự của một người (mục 7). Học vẽ theo đúng thứ tự này thì bài tập khi học cũng thành asset dùng được.</p>
+      <p class="count">Ô viền vàng là điểm duyệt với khách.</p>
+      <ol class="flow">
+        <li><span class="ft">Brief</span><span class="fz">需求</span><span class="fd">Theme, platform, kích thước, danh sách asset, tham chiếu style, yêu cầu animation và VFX.</span><span class="fo"><b>Lỗi hay gặp:</b> brief không có danh sách asset. Tự lập rồi gửi khách xác nhận trước khi vẽ.</span></li>
+        <li class="gate"><span class="ft">Style key và style guide</span><span class="fz">风格定调 / 美术规范</span><span class="gate-badge">Duyệt style</span><span class="fd">Lead vẽ 1–2 ảnh mẫu (key art và 2–3 symbol). Style guide 1 trang: nguồn sáng, kiểu viền, bảng màu, tỷ lệ, độ chi tiết.</span><span class="fo"><b>Lỗi hay gặp:</b> bỏ bước này thì mỗi symbol ra một kiểu.</span></li>
+        <li class="gate"><span class="ft">Sketch</span><span class="fz">草图</span><span class="gate-badge">Duyệt lần 1</span><span class="fd">3–5 phương án thô cho mỗi asset, đen trắng, khổ nhỏ.</span><span class="fo"><b>Lỗi hay gặp:</b> sketch quá kỹ, bị loại thì phí công.</span></li>
+        <li><span class="ft">Value</span><span class="fz">线稿 / 黑白稿</span><span class="fd">Chốt hình, vẽ sáng tối bằng tông xám.</span><span class="fo"><b>Lỗi hay gặp:</b> value phẳng thì lên màu cũng không cứu được.</span></li>
+        <li class="gate"><span class="ft">Màu</span><span class="fz">色稿</span><span class="gate-badge">Duyệt lần 2</span><span class="fd">Phủ màu lên bản xám (layer Color, Overlay, Gradient Map), hoặc tô màu nền rồi vẽ sáng tối.</span><span class="fo"><b>Lỗi hay gặp:</b> quá nhiều màu. Mỗi symbol tối đa 3 màu chủ đạo.</span></li>
+        <li class="gate"><span class="ft">Render</span><span class="fz">细化 / 精修</span><span class="gate-badge">Duyệt lần 3</span><span class="fd">Vật liệu, chi tiết, viền, highlight, glow.</span><span class="fo"><b>Lỗi hay gặp:</b> chi tiết quá nhỏ, mất hết khi xem ở 128px.</span></li>
+        <li><span class="ft">Tách layer</span><span class="fz">拆分 / 补全</span><span class="fd">Tách phần sẽ chuyển động, vẽ bù phần bị che. PSD có tên layer theo quy ước Spine.</span><span class="fo"><b>Lỗi hay gặp:</b> quên vẽ bù, khi animate bị lộ lỗ.</span></li>
+        <li><span class="ft">Animation, VFX</span><span class="fz">动效 / 特效</span><span class="fd">Spine: idle, landing, win. VFX: glow, sparkle, coin.</span><span class="fo"><b>Lỗi hay gặp:</b> bake chữ số vào animation.</span></li>
+        <li class="gate"><span class="ft">Xuất file, giao, QA</span><span class="fz">切图 / 交付 / 走查</span><span class="gate-badge">Nghiệm thu</span><span class="fd">Xuất PNG, đặt tên, gói atlas, giao PSD. Designer kiểm tra lại trong game thật.</span><span class="fo"><b>Lỗi hay gặp:</b> sai tên file, viền trắng, sai kích thước.</span></li>
+      </ol>
+      <p class="count">Duyệt 3 lần, giữ PSD phân lớp, hợp đồng ghi số vòng sửa tối đa (gợi ý không quá 3): <a href="https://www.zhongjiaohuliantech.com/chyhzx/854.html" target="_blank" rel="noopener">中教互联</a>. Studio TQ không công bố quy trình nội bộ; khung này ghép từ tài liệu ngành game TQ, tài liệu studio slot phương Tây và kinh nghiệm nghề.</p>
+
+      <h3>Nguyên tắc “production-first”: hỏi trước khi vẽ</h3>
+      <ul>
+        <li>Asset này dùng ở đâu? Kích thước thật là bao nhiêu?</li>
+        <li>Có cần tách layer không? Có animation không?</li>
+        <li>Có cần bản dọc (portrait) không?</li>
+        <li>Engine giới hạn gì (định dạng, dung lượng, version Spine)?</li>
+      </ul>
+      <p>Studio TQ chuẩn hóa brief, làm <strong>style test</strong> trước, sản xuất theo đợt (batch), QC chặt, sửa nhanh, đặt tên file nghiêm.</p>
+    </section>
+
+    <section class="sec col" id="workflow">
+      <div class="sec-h"><span class="num">7</span><h2>Vẽ một symbol từ brief đến file</h2></div>
+      <p class="lead">Workflow 10 bước của một người, ví dụ high symbol “đầu rồng vàng”. Canvas 2048×2048, giao bản 512px, vật thể chiếm 70–85% khung.</p>
+      <ol class="flow">
+        <li><span class="ft">Đọc brief</span><span class="fd">Theme, số lượng, kích thước canvas, style, palette, mức thực tế hay cartoon, tham chiếu, deadline, engine và định dạng file. Brief thiếu thì hỏi, không tự đoán.</span></li>
+        <li><span class="ft">Tìm tham chiếu</span><span class="fd">Không để copy. Để hiểu hình dạng thật, chất liệu, ánh sáng, màu, tỷ lệ, cảm giác theme.</span></li>
+        <li><span class="ft">Thumbnail</span><span class="fd">6 silhouette cỡ 200px, tô đen. Chỉ lo hình dáng và bố cục. Khoảng 20 phút.</span></li>
+        <li><span class="ft">Chọn phương án</span><span class="fd">Silhouette có rõ? Hợp theme? Dễ animation? Có nổi? Có giống symbol khác?</span></li>
+        <li><span class="ft">Rough</span><span class="fd">Phóng to, chia khối lớn: đầu, hàm, sừng, bờm. Khoảng 30 phút.</span></li>
+        <li><span class="ft">Value</span><span class="fd">Tô xám 3 tông theo nguồn sáng trên-trái, thu nhỏ để kiểm tra. Khoảng 40 phút.</span></li>
+        <li><span class="ft">Màu</span><span class="fd">Layer Color hoặc Gradient Map trên bản xám. Ví dụ: vàng cam, đỏ son, xanh ngọc làm điểm nhấn. Khoảng 30 phút.</span></li>
+        <li><span class="ft">Vật liệu và FX</span><span class="fd">Vảy vàng, mắt đá quý, bờm lửa (<a href="#vat-lieu">mục 11</a>). Viền, rim light, highlight, glow. Khoảng 3–4 giờ.</span></li>
+        <li><span class="ft">Kiểm tra</span><span class="fd">Chạy checklist ở 128px và 64px, trên nền tối. Khoảng 15 phút.</span></li>
+        <li><span class="ft">Tách layer và xuất file</span><span class="fd">Hàm dưới, mắt, mí, râu trái phải, sừng, từng mảng bờm; vẽ bù trong miệng và cổ. Kiểm tra canvas, padding, alpha, tên file. Khoảng 1–2 giờ.</span></li>
+      </ol>
+      <p>Vẽ tay hoàn toàn mất khoảng <strong>6–8 giờ</strong>. Có AI hỗ trợ bước 6–8 thì còn khoảng 3–4 giờ (ước tính).</p>
+      <h3>Hai cách lên hình</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>Cách</th><th>Làm thế nào</th><th>Hợp với</th></tr></thead>
+        <tbody>
+          <tr><td>Theo nét (line-based)</td><td class="plain">Vẽ line art rõ, rồi tô</td><td class="plain">Cartoon, cách điệu</td></tr>
+          <tr><td>Theo mảng (shape-based)</td><td class="plain">Dùng mảng màu tạo hình, sửa cạnh bằng lasso đa giác, rồi vẽ sáng tối ở layer mới</td><td class="plain">Vật cứng như đá quý, kim loại; style bán thực tế, premium</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <!-- ============================== KỸ NĂNG ============================== -->
+    <div class="part col">Kỹ năng vẽ</div>
+
+    <section class="sec col" id="hinh-khoi">
+      <div class="sec-h"><span class="num">8</span><h2>Hình khối và silhouette</h2></div>
+      <p class="lead">Mọi vật thể đều ghép từ 4 khối: cầu, hộp, trụ, nón. Đồng xu là trụ dẹt, rương là hộp, đá quý là nhiều mặt phẳng, đầu rồng là cầu cộng hộp cộng nón.</p>
+      <h3>Silhouette tốt là silhouette thế nào</h3>
+      <ul>
+        <li>Có hình dáng riêng và một đường viền ngoài dễ nhớ (sừng, tai, quai, góc nhọn).</li>
+        <li>Không có quá nhiều chi tiết rời rạc, không “rỗng” quá nhiều ở giữa, tỷ lệ cân đối.</li>
+        <li>Hai symbol cùng bộ không được có silhouette giống nhau.</li>
+      </ul>
+      <div class="callout"><b class="t">Ví dụ</b>Vương miện, chén vàng và kiếm mà cùng tròn tròn, nhiều chi tiết nhỏ thì người chơi khó phân biệt. Sửa: vương miện có các đỉnh nhọn, chén vàng có thân rộng và chân đế, kiếm có thanh dài và cán rõ.</div>
+      <h3>Ngôn ngữ hình khối</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>Hình</th><th>Cảm giác</th></tr></thead>
+        <tbody>
+          <tr><td>Tròn</td><td class="plain">Thân thiện, dễ thương</td></tr>
+          <tr><td>Vuông</td><td class="plain">Vững chắc, giàu có</td></tr>
+          <tr><td>Nhọn, tam giác</td><td class="plain">Nguy hiểm, năng lượng</td></tr>
+        </tbody>
+      </table></div>
+      <p>Mỗi symbol nên có một hình chủ đạo. Slot hay dùng góc nhìn thẳng, hoặc 3/4 nhìn hơi từ trên xuống: chỉ cần phối cảnh 1 và 2 điểm tụ ở mức vẽ được hộp và trụ xoay nhiều góc.</p>
+    </section>
+
+    <section class="sec col" id="value">
+      <div class="sec-h"><span class="num">9</span><h2>Value: sáng, tối và điểm nhấn</h2></div>
+      <p class="lead">Value là độ sáng tối của màu, không phụ thuộc sắc màu. Đỏ đậm và xanh đậm có thể cùng value. Thử nút “Bản lỗi value” rồi “Đen trắng” ở đầu trang để thấy vì sao value quyết định độ đọc.</p>
+      <h3>5 vùng sáng tối và điểm highlight</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>Vùng</th><th>Nghĩa</th></tr></thead>
+        <tbody>
+          <tr><td>Vùng sáng (light)</td><td class="plain">Mặt hướng về nguồn sáng</td></tr>
+          <tr><td>Vùng chuyển (halftone)</td><td class="plain">Chuyển từ sáng sang tối</td></tr>
+          <tr><td>Đường ranh sáng tối <span class="zh">明暗交界线</span></td><td class="plain">Terminator, chỗ tối nhất trên vật</td></tr>
+          <tr><td>Ánh phản xạ <span class="zh">反光</span></td><td class="plain">Ánh sáng dội từ môi trường. <strong>Luôn tối hơn vùng sáng</strong></td></tr>
+          <tr><td>Bóng đổ <span class="zh">投影</span></td><td class="plain">Bóng của vật lên mặt khác</td></tr>
+          <tr><td>Highlight <span class="zh">高光</span></td><td class="plain">Điểm sáng nhất</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Nguyên tắc</h3>
+      <ul>
+        <li>Một symbol có ít nhất 3 mức value: tối, trung, sáng. Không để cả symbol cùng độ sáng.</li>
+        <li>Vùng quan trọng nhất có tương phản cao nhất (focal point).</li>
+        <li>Rim light tách symbol khỏi nền tối. Ambient occlusion (bóng ở chỗ hai mặt sát nhau) cho chiều sâu.</li>
+        <li>Cạnh sắc ở chỗ mặt đổi hướng gắt và ở điểm nhấn. Cạnh mềm ở mặt cong.</li>
+      </ul>
+      <div class="callout"><b class="t">Ví dụ: đồng xu vàng, nguồn sáng trên-trái</b>Bóng ở mặt dưới và vùng lõm. Trung là phần chính. Sáng ở phía trên-trái. Highlight ở viền mép và điểm bóng gương. Rim light ở viền để tách khỏi nền tối.</div>
+    </section>
+
+    <section class="sec col" id="mau">
+      <div class="sec-h"><span class="num">10</span><h2>Màu và bảng màu</h2></div>
+      <h3>Kiến thức màu</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>Chủ đề</th><th>Cần hiểu</th></tr></thead>
+        <tbody>
+          <tr><td>3 thuộc tính</td><td class="plain">Hue (sắc), saturation (độ rực), value (độ sáng). Lỗi phổ biến nhất: đổi hue nhưng quên kiểm tra value</td></tr>
+          <tr><td>Màu vốn có và màu ánh sáng</td><td class="plain">Màu vốn có <span class="zh">固有色</span> bị đổi bởi màu nguồn sáng <span class="zh">光源色</span> và màu môi trường <span class="zh">环境色</span></td></tr>
+          <tr><td>Nóng lạnh <span class="zh">冷暖</span></td><td class="plain">Ánh sáng ấm thì bóng hơi lạnh và ngược lại. Đây là cách làm symbol sống động thay vì bệt</td></tr>
+          <tr><td>Làm tối</td><td class="plain">Không dùng đen. Giảm value và <strong>đổi hue</strong>: vàng tối đi thành nâu đỏ, không thành xám</td></tr>
+          <tr><td>Chỗ rực nhất</td><td class="plain">Thường ở vùng chuyển giữa sáng và tối, không ở vùng sáng nhất</td></tr>
+          <tr><td>Lên màu từ bản xám</td><td class="plain">Gradient Map, layer Color, Overlay. Nhanh nhưng dễ đục, nên vẽ lại tay ở vùng sáng và vùng phản xạ</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Cấu trúc một bảng màu slot</h3>
+      <ul>
+        <li>1 màu chủ đạo, 1–2 màu phụ, 1 màu điểm nhấn (accent, dùng ít).</li>
+        <li>Màu nền trung tính để symbol không chìm, cộng màu hiệu ứng (glow, particle).</li>
+        <li>Không quá 5–7 màu chính cho cả game. Mỗi symbol tối đa 3 màu chủ đạo.</li>
+        <li>High-pay ấm, sáng, chi tiết hơn. Low-pay đơn giản hơn. Wild, Scatter có màu và hiệu ứng riêng.</li>
+      </ul>
+      <p class="count">Hai bảng màu ví dụ của giáo trình B. Mã màu là minh họa, chỉnh theo theme.</p>
+      <h4>Vàng Ai Cập</h4>
+      <div class="pal">
+        <div class="sw"><i style="background:#B8862E"></i><span>Chủ đạo<small>vàng đồng, cát</small></span></div>
+        <div class="sw"><i style="background:#1F7F86"></i><span>Phụ<small>xanh ngọc</small></span></div>
+        <div class="sw"><i style="background:#1E3A78"></i><span>Phụ<small>xanh dương đậm</small></span></div>
+        <div class="sw"><i style="background:#B0182E"></i><span>Accent<small>đỏ ruby</small></span></div>
+        <div class="sw"><i style="background:radial-gradient(circle,#FFF2B0,#F2B83A 60%,#B8862E)"></i><span>FX<small>vàng phát sáng</small></span></div>
+      </div>
+      <h4>Neon</h4>
+      <div class="pal">
+        <div class="sw"><i style="background:#141A3C"></i><span>Chủ đạo<small>xanh đêm</small></span></div>
+        <div class="sw"><i style="background:#3B1660"></i><span>Chủ đạo<small>tím đậm</small></span></div>
+        <div class="sw"><i style="background:#FF3DA6"></i><span>Phụ<small>hồng neon</small></span></div>
+        <div class="sw"><i style="background:#2EE6F0"></i><span>Phụ<small>cyan</small></span></div>
+        <div class="sw"><i style="background:radial-gradient(circle,#FFFFFF,#FFE066 55%,#FF3DA6)"></i><span>Accent, FX<small>vàng, glow neon</small></span></div>
+      </div>
+    </section>
+
+    <section class="sec col" id="vat-lieu">
+      <div class="sec-h"><span class="num">11</span><h2>Công thức vật liệu</h2></div>
+      <p class="lead">Vật liệu quyết định cảm giác premium. Cùng một hình, sai vật liệu là symbol trông rẻ. Giả định nguồn sáng trên-trái.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Vật liệu</th><th>Dùng ở đâu</th><th>Dấu hiệu nhận ra</th></tr></thead>
+        <tbody>
+          <tr><td>Vàng kim loại</td><td class="plain">Viền symbol, khung reel, đồng xu, chữ Big Win</td><td class="plain">Tương phản rất cao, phản chiếu môi trường, highlight gần trắng</td></tr>
+          <tr><td>Đá quý cắt mài</td><td class="plain">Low symbol, mắt rồng, nút</td><td class="plain">Mặt phẳng sắc. Phía xa nguồn sáng lại sáng</td></tr>
+          <tr><td>Ngọc (jade)</td><td class="plain">Symbol <span class="zh">国风</span>, bùa</td><td class="plain">Trong mờ, cạnh mềm, chỗ mỏng sáng và rực hơn</td></tr>
+          <tr><td>Sơn mài đỏ</td><td class="plain">Khung, plate của Wild, hộp</td><td class="plain">Highlight dài, sắc như gương, đỏ son sâu</td></tr>
+          <tr><td>Bạc, đồng</td><td class="plain">Vũ khí, chuông, đồng xu thường</td><td class="plain">Như vàng nhưng tông lạnh (bạc) hoặc cam đỏ (đồng)</td></tr>
+          <tr><td>Đá</td><td class="plain">Tượng, cột, đền</td><td class="plain">Gồ ghề, bóng mềm hơn vàng, ít phản chiếu, có vết nứt</td></tr>
+          <tr><td>Gỗ</td><td class="plain">Rương, khung kiểu cổ</td><td class="plain">Vân chạy theo khối, tông ấm, ít bóng</td></tr>
+          <tr><td>Vải, lụa</td><td class="plain">Trang phục, rèm</td><td class="plain">Nếp gấp, highlight mềm. Lụa có dải sáng dài</td></tr>
+          <tr><td>Lửa, phép, glow</td><td class="plain">Bờm rồng, Scatter, VFX</td><td class="plain">Lõi gần trắng, ra ngoài rực rồi tối dần. Chế độ Add</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Công thức từng bước</h3>
+      <div class="mat-tabs" id="matTabs" role="group" aria-label="Chọn vật liệu"></div>
+      <div class="panel" id="matPanel" aria-live="polite"></div>
+    </section>
+
+    <section class="sec col" id="meo">
+      <div class="sec-h"><span class="num">12</span><h2>Blend mode, viền, glow, chữ Big Win</h2></div>
+      <h3>Blend mode dùng hằng ngày</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>Chế độ</th><th>Dùng cho</th></tr></thead>
+        <tbody>
+          <tr><td>Multiply</td><td class="plain">Bóng tối, bóng đổ</td></tr>
+          <tr><td>Overlay, Soft Light</td><td class="plain">Nhuộm màu, tăng tương phản nhẹ</td></tr>
+          <tr><td>Screen</td><td class="plain">Ánh sáng mềm, không khí</td></tr>
+          <tr><td>Color Dodge</td><td class="plain">Highlight rực trên kim loại, đá quý. Dùng ít, dễ cháy màu</td></tr>
+          <tr><td>Linear Dodge (Add)</td><td class="plain">Glow, lửa, sparkle, VFX</td></tr>
+          <tr><td>Color</td><td class="plain">Lên màu cho bản xám mà giữ nguyên value</td></tr>
+          <tr><td>Gradient Map</td><td class="plain">Lên màu cả bản xám theo một dải màu từ tối đến sáng</td></tr>
+          <tr><td>Clipping Mask</td><td class="plain">Chỉ vẽ trong phạm vi hình bên dưới</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Viền ngoài và rim light</h3>
+      <ul>
+        <li>Viền dùng màu <strong>tối cùng tông</strong>: nâu đậm cho symbol ấm, xanh đen cho symbol lạnh. Không dùng đen thuần.</li>
+        <li>Dày khoảng <strong>4px ở cỡ 256px</strong>, đều cả bộ.</li>
+        <li>Phía trong viền, ở cạnh xa nguồn sáng, thêm một rim light mảnh để tách khỏi nền tối của reel.</li>
+      </ul>
+      <h3>Glow, lửa, sparkle</h3>
+      <ul>
+        <li><strong>Glow:</strong> cọ mềm, Linear Dodge, lõi rực rồi tối dần, độ mờ thấp. Tách layer riêng <code>fx_glow</code> để engine bật tắt.</li>
+        <li><strong>Lửa:</strong> lõi gần trắng → vàng → cam → đỏ ở mép. Lưỡi lửa uốn theo một hướng chung, đầu nhọn.</li>
+        <li><strong>Sparkle:</strong> chữ thập 4 cánh, cánh ngang dài hơn cánh dọc, lõi trắng. Mỗi symbol 1–3 cái, nhiều quá trông rẻ.</li>
+      </ul>
+      <h3>Chữ Big Win (layer style trong Photoshop)</h3>
+      <ol>
+        <li>Font display thật dày, set chữ, chuyển thành shape.</li>
+        <li>Gradient Overlay vàng nhiều điểm dừng (sáng, tối, sáng, tối) để giả kim loại phản chiếu.</li>
+        <li>Bevel &amp; Emboss (Inner Bevel, Smooth) để tạo khối nổi.</li>
+        <li>Stroke bên trong mảnh màu tối, rồi nhân bản layer thêm 2–3 lớp stroke ngoài (vàng → nâu đậm → tối).</li>
+        <li>Drop Shadow và Outer Glow để chữ tách khỏi mọi nền.</li>
+        <li>Vẽ tay thêm highlight, sparkle. Đặt chữ lên banner hoặc plate có họa tiết.</li>
+        <li>Giao animator: mỗi chữ cái một layer để làm chữ nảy, kèm một bản đã ghép.</li>
+      </ol>
+      <p>Big, Mega, Super Win cùng một hệ, cấp sau “nặng” hơn cấp trước: thêm màu, thêm họa tiết, thêm glow.</p>
+      <h3>3 cách tự kiểm tra khi đang vẽ</h3>
+      <ol>
+        <li><strong>Bật layer đen trắng</strong> (layer tô đen ở chế độ Color, đặt trên cùng): value có đọc được không?</li>
+        <li><strong>Lật ngang canvas:</strong> chỗ lệch, méo hiện ra ngay.</li>
+        <li><strong>Nhìn cửa sổ 128px</strong> (<em>Window → Arrange → New Window</em>): chi tiết nào biến mất ở cỡ này thì không đáng tốn thời gian vẽ.</li>
+      </ol>
+      <p class="count">Thử cả 3 trên symbol mẫu ở đầu trang.</p>
+    </section>
+
+    <!-- ============================== MÀN HÌNH, UI, CHUYỂN ĐỘNG ============================== -->
+    <div class="part col">Màn hình, UI, chuyển động</div>
+
+    <section class="sec col" id="nen">
+      <div class="sec-h"><span class="num">13</span><h2>Nền và khung reel</h2></div>
+      <p class="lead">Nền tạo không khí nhưng không cạnh tranh với reel. Vùng giữa, nơi đặt reel, ít chi tiết, tương phản và độ rực thấp hơn symbol.</p>
+      <h3>Cấu trúc layer nền</h3>
+      <div class="code"><pre id="bgLayers">BG_Sky          bầu trời
+BG_Far          núi, rừng mờ ở xa
+BG_Mid          đền, tượng, cây
+BG_Near         cột đá, ngọn lửa, lá
+FG_Decoration   dây leo, vàng, đá quý ở tiền cảnh
+Reel_Area       vùng reel, tối và đơn giản
+Frame           khung reel
+FX_Ambient      bụi vàng, đom đóm, tia sáng
+UI              nút, thanh thông tin</pre><button class="btn small copy" data-copy="bgLayers">Sao chép</button></div>
+      <p>Tách layer để làm parallax (mây trôi, lồng đèn đung đưa), chỉnh màu từng phần, đổi theme, tối ưu hiệu năng. Giao nền thành 3–4 lớp.</p>
+      <h3>Quy trình vẽ nền</h3>
+      <ol>
+        <li>Xác định mood, vẽ thumbnail bố cục.</li>
+        <li>Chia tiền cảnh, trung cảnh, hậu cảnh. Vẽ value blockout.</li>
+        <li>Đổ màu chính, render chi tiết, thêm ánh sáng và không khí, thêm FX.</li>
+        <li>Tạo vùng reel. Kiểm tra trên điện thoại.</li>
+      </ol>
+      <h3>Quy cách</h3>
+      <ul>
+        <li>1920×1080 (ngang) và 1080×1920 (dọc). <strong>Vẽ dư mép</strong> để không lộ trên máy màn dài (19.5:9) hay tablet (4:3).</li>
+        <li><strong>Nền free spin:</strong> cùng địa điểm nhưng đổi thời điểm (ngày sang đêm) hoặc đổi không khí, để người chơi biết đang ở chế độ khác (kinh nghiệm nghề).</li>
+      </ul>
+      <h3>Khung reel (game frame)</h3>
+      <ul>
+        <li>Tạo cảm giác “máy slot”, tách reel khỏi nền, tạo chỗ cho UI, hỗ trợ hiệu ứng thắng.</li>
+        <li>Dùng vật liệu của theme (vàng, sơn mài). Bên trong khung tối và đơn giản để symbol nổi lên.</li>
+        <li>Không dày quá, không che symbol, không quá sáng. Có bản dọc và ngang.</li>
+      </ul>
+    </section>
+
+    <section class="sec col" id="ui">
+      <div class="sec-h"><span class="num">14</span><h2>Trạng thái nút và HUD</h2></div>
+      <p class="lead">Phần bạn có lợi thế. Người chơi cần biết: nút có bấm được không, đã bấm chưa, game đang quay hay dừng, có đang thắng không.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Trạng thái</th><th>Khi nào</th><th>Bắt buộc?</th></tr></thead>
+        <tbody>
+          <tr><td><code>normal</code></td><td class="plain">Bình thường, bấm được</td><td class="plain"><span class="badge b-ok">Có</span></td></tr>
+          <tr><td><code>pressed</code></td><td class="plain">Đang bấm</td><td class="plain"><span class="badge b-ok">Có</span></td></tr>
+          <tr><td><code>disabled</code></td><td class="plain">Không bấm được</td><td class="plain"><span class="badge b-ok">Có</span></td></tr>
+          <tr><td><code>hover</code></td><td class="plain">Rê chuột trên desktop</td><td class="plain"><span class="badge b-info">Desktop</span></td></tr>
+          <tr><td><code>spinning</code></td><td class="plain">Reel đang quay</td><td class="plain"><span class="badge b-info">Nút Spin</span></td></tr>
+          <tr><td><code>auto</code></td><td class="plain">Auto-play đang bật</td><td class="plain"><span class="badge b-info">Nút Spin</span></td></tr>
+          <tr><td><code>loading</code></td><td class="plain">Đang tải</td><td class="plain"><span class="badge b-warn">Tùy game</span></td></tr>
+        </tbody>
+      </table></div>
+      <p>Mỗi trạng thái khác biệt rõ nhưng cùng màu, cùng hình. Chữ đọc rõ. Không dùng hiệu ứng quá mạnh. Nút Spin to nhất, nổi nhất.</p>
+      <h3>HUD: phần giao diện luôn hiện</h3>
+      <ul>
+        <li>Balance, Bet, Win, Spin, Auto, Menu, Paytable, Settings.</li>
+        <li>Thông tin quan trọng dễ đọc, có thứ bậc rõ, khoảng cách hợp lý. Không che reel. Co giãn được theo màn hình.</li>
+        <li>Panel, nút co giãn thiết kế theo <strong>9-slice</strong> (<span class="zh">九宫格</span>): 4 góc giữ nguyên, cạnh và phần giữa kéo giãn (<a href="https://docs.cocos.com/creator/3.5/en/ui-system/components/engine/sliced-sprite.html" target="_blank" rel="noopener">Cocos</a>).</li>
+      </ul>
+    </section>
+
+    <section class="sec col" id="anim">
+      <div class="sec-h"><span class="num">15</span><h2>Animation và VFX</h2></div>
+      <p class="lead">Animation slot không cần phức tạp như phim. Mục tiêu: sống động, phản hồi cho người chơi, nhấn mạnh lúc thắng, dẫn mắt đến bonus.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Loại</th><th>Khi nào</th><th>Thời lượng</th></tr></thead>
+        <tbody>
+          <tr><td>Idle</td><td class="plain">Lặp khi symbol đứng yên. Frame đầu và cuối khớp nhau</td><td class="plain">2–5 giây</td></tr>
+          <tr><td>Landing</td><td class="plain">Lúc reel dừng: co giãn nhẹ (squash &amp; stretch)</td><td class="plain">Ngắn</td></tr>
+          <tr><td>Anticipation</td><td class="plain">Chờ trúng, hay dùng cho Scatter</td><td class="plain">Theo nhịp reel</td></tr>
+          <tr><td>Win</td><td class="plain">Khi trúng. Glow, sparkle mờ dần; mesh warp cho high symbol</td><td class="plain">0.5–1 giây</td></tr>
+          <tr><td>Bonus transition</td><td class="plain">Chuyển sang màn bonus</td><td class="plain">1–2 giây</td></tr>
+          <tr><td>Big Win</td><td class="plain">Chia <code>start</code>, <code>idle</code>, <code>end</code></td><td class="plain">3–5 giây</td></tr>
+        </tbody>
+      </table></div>
+      <p class="count">Thời lượng idle, kỹ thuật win và luật mesh: <a href="https://gamixlabs.com/blog/creating-symbol-animations-in-spine-for-slot-games" target="_blank" rel="noopener">Gamix Labs</a>. Thời lượng win, transition, Big Win: giáo trình B.</p>
+      <h3>Spine cơ bản</h3>
+      <ul>
+        <li>Bone, slot, attachment, draw order, skin, mesh và weight. Xuất JSON hoặc skel kèm atlas. Mesh và weight chỉ có ở bản Professional: kiểm tra trên trang Esoteric trước khi mua.</li>
+        <li>Chỉ dùng mesh cho sự kiện thắng, không dùng cho vòng quay liên tục vì nặng GPU.</li>
+        <li>Chuyển PSD sang Spine bằng script chính thức <code>PhotoshopToSpine</code> (<a href="https://github.com/EsotericSoftware/spine-scripts" target="_blank" rel="noopener">spine-scripts</a>).</li>
+        <li>Spine 4.2.xx hoặc 3.8.99 theo yêu cầu dev. Mỗi vật thể một skeleton, ít bone, ít tam giác. Dùng skin thay vì nhân bản skeleton.</li>
+        <li><strong>Không bake chữ số</strong> vào animation. Chừa slot kiểu <code>txt_win_amount</code> để engine điền số (<a href="https://spinorium-docs.pages.dev/animations/spine-animation/common-requirements" target="_blank" rel="noopener">Spinorium</a>).</li>
+      </ul>
+      <h3>VFX cho artist 2D</h3>
+      <ul>
+        <li>Loại hay gặp: coin burst, confetti, sparkle, glow, tia sáng, khói, lửa, vòng phép, nổ, chuyển cảnh.</li>
+        <li>Artist 2D vẽ sprite: glow tròn, sparkle 4 cánh, tia sáng, đồng xu xoay 8–12 frame. Particle do engine làm.</li>
+        <li>VFX phục vụ gameplay: không che symbol, không quá sáng, không quá dài, màu khớp bảng màu.</li>
+      </ul>
+    </section>
+
+    <!-- ============================== AI, GIAO FILE, PORTFOLIO ============================== -->
+    <div class="part col">AI, giao file, portfolio</div>
+
+    <section class="sec col" id="ai">
+      <div class="sec-h"><span class="num">16</span><h2>AI và ComfyUI trong quy trình</h2></div>
+      <p class="lead">AI là trợ lý, không phải người vẽ. Nó làm tốt 3 việc: tìm style, render nháp từ sketch của bạn, sinh biến thể. Silhouette, sự đồng bộ, vật liệu, ánh sáng, chất lượng kỹ thuật vẫn do bạn kiểm soát.</p>
+      <h3>3 chế độ dùng AI</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>Chế độ</th><th>Cách làm</th><th>Khi nào</th></tr></thead>
+        <tbody>
+          <tr><td>A. AI làm tham chiếu</td><td class="plain">AI sinh moodboard, ảnh tham khảo vật liệu và ánh sáng. Bạn vẽ tay toàn bộ</td><td class="plain">Khi học (Level 1–4), hoặc khi khách cấm AI</td></tr>
+          <tr><td>B. “Bánh kẹp”</td><td class="plain">Bạn vẽ silhouette, sketch, value → ControlNet kèm style → chọn ảnh → paintover → img2img denoise 0.25–0.4 → paintover lần cuối</td><td class="plain"><strong>Chế độ sản xuất chính</strong></td></tr>
+          <tr><td>C. Bộ mẫu tay → LoRA</td><td class="plain">Vẽ tay 10–15 asset mẫu, train LoRA, sinh biến thể theo khung ControlNet, rồi paintover</td><td class="plain">Bộ lớn, nhiều theme cùng series. Style là của bạn</td></tr>
+        </tbody>
+      </table></div>
+      <h3>AI ở từng bước của dây chuyền</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>Bước</th><th>AI làm gì</th><th>Bạn phải làm</th></tr></thead>
+        <tbody>
+          <tr><td>Brief</td><td class="plain">Lập danh sách asset, tên file, bảng kích thước (Claude)</td><td class="plain">Chốt với khách</td></tr>
+          <tr><td>Style key</td><td class="plain">30–60 ảnh khám phá (Z-Image Turbo, Midjourney)</td><td class="plain">Chọn, vẽ đè thành style key, viết style guide</td></tr>
+          <tr><td>Sketch</td><td class="plain">Gợi ý biến thể silhouette: img2img từ thumbnail, denoise 0.5–0.7</td><td class="plain"><strong>Tự vẽ thumbnail.</strong> Đây là phần thiết kế</td></tr>
+          <tr><td>Value, màu</td><td class="plain">Render nháp từ sketch theo style đã khóa (ControlNet kèm reference hoặc LoRA)</td><td class="plain">Chọn ảnh, sửa value và màu</td></tr>
+          <tr><td>Render</td><td class="plain">Làm mịn, thêm chi tiết, đổi màu đá quý (img2img denoise thấp, FLUX.2 klein edit)</td><td class="plain"><strong>Paintover</strong>: cấu trúc, ánh sáng, viền, chi tiết ở 128px</td></tr>
+          <tr><td>Tách layer</td><td class="plain">Tách thô thành nhiều layer (Qwen-Image-Layered, chạy cloud)</td><td class="plain">Sửa layer, vẽ bù phần bị che</td></tr>
+          <tr><td>Animation</td><td class="plain">Video AI làm tham chiếu chuyển động</td><td class="plain">Rig và animate trong Spine</td></tr>
+          <tr><td>Xuất file</td><td class="plain">Tách nền, cắt viền thừa, đổi kích thước, đặt tên hàng loạt</td><td class="plain">Kiểm tra viền halo trên nền tối</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Khung prompt cho asset (dạng tag, hợp SDXL)</h3>
+      <div class="code"><pre id="pFrame">[Loại asset] + [Theme] + [Chủ thể] + [Vật liệu] + [Ánh sáng] + [Màu] + [Bố cục] + [Style] + [Yêu cầu kỹ thuật]</pre><button class="btn small copy" data-copy="pFrame">Sao chép</button></div>
+      <div class="code"><pre id="pSym">single slot game symbol, Egyptian theme, golden scarab amulet,
+polished gold and lapis lazuli, dramatic rim light,
+royal blue and gold palette, centered icon composition,
+semi-realistic mobile game art, clean silhouette, high detail</pre><button class="btn small copy" data-copy="pSym">Sao chép</button></div>
+      <div class="code"><pre id="pBg">slot game background, ancient golden temple interior,
+wide cinematic composition, empty central area for game reels,
+ornate stone pillars, glowing torches, floating gold particles,
+warm cinematic lighting, highly detailed game environment,
+no characters, no text, no ui</pre><button class="btn small copy" data-copy="pBg">Sao chép</button></div>
+      <div class="code"><pre id="pNeg">blurry, low quality, watermark, text, logo, extra limbs,
+deformed hands, oversaturated, cluttered, realistic photo,
+copyrighted character, trademark, ui text, signature</pre><button class="btn small copy" data-copy="pNeg">Sao chép</button></div>
+      <p>Model đời mới (Z-Image Turbo, FLUX.2, Nano Banana, GPT Image) đọc câu văn tốt hơn chuỗi tag và không dùng prompt âm. Công thức theo từng model, node, license và lỗi trên Mac M2 Max: xem <a href="comfyui.html">trang hướng dẫn ComfyUI</a>, mục 8 và 12.</p>
+      <h3>Vẽ đè có AI ngay trong lúc vẽ</h3>
+      <ul>
+        <li><a href="https://github.com/Acly/krita-ai-diffusion" target="_blank" rel="noopener">Krita AI Diffusion</a>: dùng ComfyUI làm backend để inpaint, vẽ đè, live painting ngay trong Krita.</li>
+        <li>Photoshop Generative Fill: sửa nhanh vùng nhỏ.</li>
+        <li>Cách studio TQ làm: Photoshop lo layer, mask, chỉnh màu; ComfyUI lo inpaint và giữ nhân vật nhất quán.</li>
+      </ul>
+      <div class="callout bad"><b class="t">Luật khi dùng AI</b>
+        <ul>
+          <li>Không dùng ảnh AI làm file cuối mà không kiểm soát. Không tin output AI 100%, không bỏ qua QC.</li>
+          <li>Không đưa tên studio hay game thật vào prompt. Không train LoRA từ art của studio khác. Không dùng AI cho logo, brand khi chưa có quyền.</li>
+          <li>Chữ (WILD, Big Win, logo, chữ số) luôn set font bằng tay.</li>
+          <li>Giữ PSD có layer value và layer paintover làm bằng chứng phần do người vẽ.</li>
+          <li>Ghi rõ việc dùng AI trong hợp đồng và trong <code>README.md</code> của gói giao. Làm cho khách thì chỉ dùng model cho phép dùng thương mại.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="sec col" id="file">
+      <div class="sec-h"><span class="num">17</span><h2>File, layer, đặt tên</h2></div>
+      <h3>PSD giao cho animator: chia theo bộ phận chuyển động</h3>
+      <div class="code"><pre id="psdTree">sym_h1_dragon.psd
+├── fx_glow            (Linear Dodge/Add)  tách riêng để engine bật/tắt
+├── fx_sparkle         (Linear Dodge/Add)
+├── outline            (Normal)            viền ngoài
+├── [group] parts      mỗi phần chuyển động là 1 group, tên theo quy ước Spine
+│   ├── horn_l, horn_r
+│   ├── eye_l, eye_r, lid_l, lid_r
+│   ├── whisker_l, whisker_r
+│   ├── jaw            đã vẽ bù phần trong miệng
+│   └── head
+│       ├── highlight  (Normal hoặc Color Dodge, clipping mask)
+│       ├── light      (Overlay hoặc Screen, clipping mask)
+│       ├── shadow     (Multiply, clipping mask)
+│       ├── base_color (Normal)
+│       └── value      bản xám gốc, ẩn nhưng giữ lại
+├── plate              tấm nền sau symbol, nếu có
+└── bg_check           nền tối để kiểm tra viền, tắt khi xuất</pre><button class="btn small copy" data-copy="psdTree">Sao chép</button></div>
+      <p>File làm việc có thể chia group theo bước: <code>00_DOC</code>, <code>01_REFERENCE</code>, <code>02_SKETCH</code>, <code>03_LINE</code>, <code>04_BASE_COLOR</code>, <code>05_SHADOW</code>, <code>06_LIGHT</code>, <code>07_MATERIAL</code>, <code>08_FX</code>, <code>09_ANIM_LAYER</code>, <code>10_EXPORT</code>. Trước khi giao, dựng lại theo bộ phận như trên. Tên layer viết thường, không dấu, nối bằng gạch dưới.</p>
+
+      <h3>Tạo tên file</h3>
+      <div class="panel">
+        <div class="grid-f">
+          <div class="field"><label for="nTheme">Theme (folder)</label><input class="input" id="nTheme" value="dragon_lantern"></div>
+          <div class="field"><label for="nType">Loại</label>
+            <select class="select" id="nType">
+              <option value="sym">sym (symbol)</option><option value="bg">bg (nền)</option><option value="btn">btn (nút)</option>
+              <option value="panel">panel</option><option value="icon">icon</option><option value="txt">txt (chữ)</option><option value="fx">fx (hiệu ứng)</option>
+            </select></div>
+          <div class="field"><label for="nName">Tên</label><input class="input" id="nName" value="h1_dragon"></div>
+          <div class="field"><label for="nState">Trạng thái</label>
+            <select class="select" id="nState"><option value="">(không)</option><option>normal</option><option>pressed</option><option>disabled</option><option>hover</option><option>win</option><option>blur</option></select></div>
+          <div class="field"><label for="nSize">Kích thước</label><input class="input" id="nSize" value="512"></div>
+          <div class="field"><label for="nVer">Version</label><input class="input" id="nVer" type="number" min="1" value="1"></div>
+        </div>
+        <div class="out-label"><span>Đường dẫn file</span><button class="btn small copy" data-copy="nOut">Sao chép</button></div>
+        <div class="code" style="margin:0"><pre id="nOut"></pre></div>
+      </div>
+
+      <h3>Quy cách khi giao</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>Hạng mục</th><th>Quy cách</th></tr></thead>
+        <tbody>
+          <tr><td>Symbol</td><td class="plain">Khoảng 256–512px mỗi trạng thái, PNG nền trong suốt, kèm PSD phân lớp. Thường gói thành spritesheet kèm atlas JSON</td></tr>
+          <tr><td>Nền</td><td class="plain">1920×1080 và 1080×1920, có vẽ dư mép</td></tr>
+          <tr><td>Tên file</td><td class="plain">Chữ thường, số, gạch dưới. Tiền tố <code>btn_</code>, <code>bg_</code>, <code>icon_</code>, <code>sym_</code>, <code>txt_</code>, <code>fx_</code></td></tr>
+          <tr><td>Bộ chữ số tiền thắng</td><td class="plain">0–9, dấu phẩy, dấu chấm, ký hiệu tiền, xuất thành bitmap font</td></tr>
+          <tr><td>Atlas</td><td class="plain">Gom ảnh nhỏ để giảm bộ nhớ và số lần tải. Chia theo màn và theo tần suất dùng</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Cây thư mục giao mẫu</h3>
+      <div class="code"><pre id="delivTree">theme_dragon_lantern/
+├── symbols/   sym_h1_dragon.png, sym_l1_a.png, sym_wild.png, sym_scatter.png…
+├── bg/        bg_base_land.png (1920×1080), bg_base_port.png (1080×1920), bg_fs_land.png…
+├── ui/        btn_spin_normal.png, btn_spin_pressed.png, btn_spin_disabled.png, panel_paytable.png…
+├── text/      txt_logo.png, txt_bigwin.png, txt_megawin.png, font_win_digits.png + .fnt
+├── spine/     sym_h1_dragon.json (hoặc .skel), .atlas, .png
+├── fx/        fx_sparkle_01.png, fx_coin_spin_01…12.png
+├── psd/       toàn bộ PSD phân lớp
+└── README.md  danh sách asset, kích thước, version Spine, ghi chú việc dùng AI</pre><button class="btn small copy" data-copy="delivTree">Sao chép</button></div>
+    </section>
+
+    <section class="sec col" id="qc">
+      <div class="sec-h"><span class="num">18</span><h2>Checklist trước khi giao</h2></div>
+      <p class="lead">Gộp checklist của cả hai giáo trình. Dùng lại cho mỗi lần giao: xong một gói thì bấm “Làm gói mới”.</p>
+      <div class="tools"><span class="count" id="qcCount"></span><button class="btn small" id="qcReset">Làm gói mới</button></div>
+      <div class="panel" id="qcList"></div>
+    </section>
+
+    <section class="sec col" id="portfolio">
+      <div class="sec-h"><span class="num">19</span><h2>Portfolio và art test</h2></div>
+      <h3>Đầu ra cuối giáo trình</h3>
+      <p>2 theme mini hoàn chỉnh ở 2 style khác nhau (gợi ý: <span class="zh">国风</span> bóng khối kiểu 3D, và cartoon). Mỗi theme một trang case study gồm:</p>
+      <ul>
+        <li>Tên project, theme, thị trường mục tiêu. Moodboard, style frame, style guide.</li>
+        <li>Bảng symbol, nền, UI kit, logo và chữ Big Win.</li>
+        <li>Mockup màn hình ngang và dọc (reel mockup), storyboard và 1 video animation.</li>
+        <li>So sánh trước và sau AI, file xuất. Ghi chú quy trình: dùng AI ở bước nào, mất bao nhiêu giờ.</li>
+      </ul>
+      <h3>Nhà tuyển dụng và khách xem gì</h3>
+      <ul>
+        <li>Portfolio đủ loại asset (nhân vật, môi trường, UI, logo), kinh nghiệm iGaming, hiểu quy trình xuất và giao file (<a href="https://www.hirebase.org/company/talentgrator/jobs/2d-concept-artist-igaming-7a34dc3b" target="_blank" rel="noopener">tin tuyển 2D Concept Artist iGaming</a>).</li>
+        <li>Nhiều nơi có <strong>art test được trả tiền</strong>: nghiên cứu style một game cụ thể rồi vẽ 1–3 ảnh khớp style đó. Luyện thêm bài “bắt style” trong 1 ngày, chỉ để luyện, không đăng.</li>
+      </ul>
+      <div class="callout warn"><b class="t">Portfolio acehaus</b>Chỉ dùng brand tự đặt, không IP thật. Bài chép (<span class="zh">临摹</span>) ghi rõ “study”, không đưa vào case study bán hàng.</div>
+    </section>
+
+    <!-- ============================== TRA CỨU ============================== -->
+    <div class="part col">Tra cứu</div>
+
+    <section class="sec col" id="luyen">
+      <div class="sec-h"><span class="num">20</span><h2>Cách luyện mỗi ngày</h2></div>
+      <ol class="flow">
+        <li><span class="ft">10 phút khởi động</span><span class="fd">Vẽ silhouette, 2 phút một cái.</span></li>
+        <li><span class="ft">40 phút bài chính</span><span class="fd">Mỗi lần một bài. Chưa đạt tiêu chí thì chưa mở bài mới.</span></li>
+        <li><span class="ft">10 phút ghi lại</span><span class="fd">Xuất ảnh kết quả (xấu cũng được). Ghi 3 dòng vào daily note: làm gì, mất bao lâu, lỗi lớn nhất.</span></li>
+      </ol>
+      <ul>
+        <li><strong>Review hằng tuần:</strong> gửi ảnh bài tập cho Claude soát theo checklist (value, silhouette, viền). Claude chỉ lỗi, bạn tự sửa.</li>
+        <li><strong>Ý tưởng mới nảy ra khi đang học</strong> (style mới, tool mới): ghi vào <code>00 - inbox/</code>, không đổi giáo trình giữa chừng.</li>
+        <li>Khóa trả phí: mỗi giai đoạn chỉ chọn một khóa và học cho xong (<a href="https://www.gcores.com/articles/187196" target="_blank" rel="noopener">GCORES</a>).</li>
+      </ul>
+    </section>
+
+    <section class="sec col" id="tu-dien">
+      <div class="sec-h"><span class="num">21</span><h2>Từ điển Trung, Việt, Anh</h2></div>
+      <p class="lead">Dùng làm từ khóa tìm trên Bilibili, ZCOOL, Huaban. Bấm vào chữ Trung để sao chép.</p>
+      <div class="tools"><input class="input" id="dictQ" type="search" placeholder="Tìm: value, silhouette, 高光, viền…" aria-label="Tìm trong từ điển"><span class="count" id="dictCount"></span></div>
+      <div class="tbl"><table>
+        <thead><tr><th>中文</th><th>Tiếng Việt</th><th>English</th></tr></thead>
+        <tbody id="dictTable"></tbody>
+      </table></div>
+    </section>
+
+    <section class="sec col" id="nguon">
+      <div class="sec-h"><span class="num">22</span><h2>Tài nguyên và nguồn</h2></div>
+      <h3>Tài nguyên theo level</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>Level</th><th>Tiếng Anh</th><th>Tiếng Trung (từ khóa)</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td class="plain"><a href="https://www.ctrlpaint.com/" target="_blank" rel="noopener">Ctrl+Paint</a> (miễn phí), <a href="https://www.proko.com/course/painting-light-101" target="_blank" rel="noopener">Proko: Painting Light 101</a>, sách <em>How to Render</em></td><td class="plain zh">素描 几何体 光影 · 明暗交界线</td></tr>
+          <tr><td>2</td><td class="plain">Sách <em>Color and Light</em> (Gurney), Proko: Digital Painting Fundamentals, YouTube Marco Bucci</td><td class="plain zh">宝石画法 · 金属质感 画法 · 厚涂 质感</td></tr>
+          <tr><td>3</td><td class="plain"><a href="https://inkration.com/the-art-of-game-art-how-casino-and-slot-visuals-are-really-made/" target="_blank" rel="noopener">Inkration</a>, <a href="https://gwb.tencent.com/community/detail/100970" target="_blank" rel="noopener">Tencent 游戏学堂</a>, <a href="https://www.163.com/dy/article/DGG12DQJ0518VIQK.html" target="_blank" rel="noopener">NetEase: 6 bước vẽ icon</a></td><td class="plain zh">游戏图标 · 老虎机 图标</td></tr>
+          <tr><td>4</td><td class="plain">Proko (vẽ đầu), YouTube Sinix Design</td><td class="plain zh">Q版 头像 画法 · 国风 角色 设计</td></tr>
+          <tr><td>5</td><td class="plain"><a href="https://docs.cocos.com/creator/3.5/en/ui-system/components/engine/sliced-sprite.html" target="_blank" rel="noopener">Cocos: 9-slice</a>, <a href="https://eastondev.com/blog/zh/posts/dev/20260520-game-ui-naming-convention/" target="_blank" rel="noopener">eastondev: đặt tên UI</a></td><td class="plain zh">游戏艺术字 金色 · 老虎机 UI</td></tr>
+          <tr><td>6</td><td class="plain"><a href="http://esotericsoftware.com/spine-user-guide" target="_blank" rel="noopener">Spine User Guide</a>, <a href="https://gamixlabs.com/blog/creating-symbol-animations-in-spine-for-slot-games" target="_blank" rel="noopener">Gamix Labs</a>, <a href="https://www.keyframe.it.com/slot-symbol-animation" target="_blank" rel="noopener">Keyframe.it</a>, <a href="https://spinorium-docs.pages.dev/animations/spine-animation/common-requirements" target="_blank" rel="noopener">Spinorium</a></td><td class="plain zh">Spine 骨骼 入门 · Spine 老虎机 动画 · 中奖动画</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Nơi xem art slot để học (chỉ xem, không copy)</h3>
+      <ul>
+        <li>ArtStation, Behance, Dribbble: tìm <code>slot symbols</code>, <code>slot game art</code>, <code>casino game UI</code>.</li>
+        <li>ZCOOL, Huaban: tìm <span class="zh">老虎机</span>, <code>slot</code>, <span class="zh">棋牌 UI</span>.</li>
+        <li>Video gameplay trên YouTube: xem nhịp animation symbol và Big Win.</li>
+      </ul>
+      <h3>Nguồn</h3>
+      <ul>
+        <li><a href="https://news.qq.com/rain/a/20261102A0BM1J00" target="_blank" rel="noopener">Tencent News: Thành Đô và AI (02/11/2026)</a></li>
+        <li><a href="https://www.zhongjiaohuliantech.com/chyhzx/854.html" target="_blank" rel="noopener">中教互联: quy trình outsource concept art</a>, <a href="https://www.sohu.com/a/471654802_121124374" target="_blank" rel="noopener">Sohu: quy trình giao file</a>, <a href="https://www.zhipin.com/baike/b120115/472e15a5a7d3ec691nZ-2Ny4ElBW.html" target="_blank" rel="noopener">BOSS直聘: mô tả việc Spine animator</a></li>
+        <li><a href="https://www.eimu.dev/use-cases/gaming" target="_blank" rel="noopener">eimu.dev: quy chuẩn art và ảnh mẫu style</a>, <a href="https://www.woshipm.com/pd/3974657.html" target="_blank" rel="noopener">woshipm: icon 3D (C4D + PS)</a></li>
+        <li><a href="https://gamixlabs.com/blog/slot-game-art-production-timeline-from-brief-to-delivery" target="_blank" rel="noopener">Gamix Labs: tiến độ sản xuất art slot</a>, <a href="https://game-ace.com/blog/10-types-of-slot-assets-in-online-casino-gaming/" target="_blank" rel="noopener">Game-Ace: 10 loại asset slot</a>, <a href="https://igaming.whimsygames.co/blog/game-art-outsourcing-for-igaming-2d-3d-and-animation-services/" target="_blank" rel="noopener">Whimsy Games</a></li>
+        <li><a href="https://developer.aliyun.com/article/1398871" target="_blank" rel="noopener">Aliyun: vì sao cần atlas</a>, <a href="https://github.com/Acly/krita-ai-diffusion" target="_blank" rel="noopener">Krita AI Diffusion</a></li>
+      </ul>
+      <div class="callout"><b class="t">Còn thiếu, cần tự kiểm chứng</b>
+        <ul>
+          <li>Không có tài liệu công khai đầy đủ về quy trình nội bộ của studio slot TQ.</li>
+          <li>Số giờ học, thời gian từng bước và mã màu đều là ước tính. Tự đo rồi sửa lại sau Level 3.</li>
+          <li>Giá và tính năng từng bản Spine: kiểm tra trên trang Esoteric Software trước khi mua.</li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============================== DRAWER GHI CHÚ ============================== -->
+<div class="scrim" id="nScrim"></div>
+<aside class="drawer" id="drawer" aria-label="Ghi chú" aria-hidden="true">
+  <div class="drawer-h"><h2 style="font-size:22px">Ghi chú</h2><button class="btn small" id="drawerClose">Đóng</button></div>
+  <p class="count" style="margin:0">Tự lưu trên trình duyệt này. Xuất ra file .md để cất vào vault, vì xóa dữ liệu trình duyệt là mất.</p>
+  <div class="field"><label for="genNote">Ghi chú chung</label><textarea id="genNote" data-note="general" placeholder="Lỗi hay mắc, cọ dùng tốt, link tham khảo…"></textarea></div>
+  <div class="saved" data-saved-for="general"></div>
+  <div class="row"><button class="btn primary" id="exportBtn">Xuất tiến độ và ghi chú (.md)</button></div>
+  <div class="row"><button class="btn small" id="resetBtn">Xóa toàn bộ tiến độ và ghi chú</button></div>
+</aside>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ============================================================
+   DỮ LIỆU: LỘ TRÌNH
+   Mã B1.1… là bài tập của giáo trình A. Mã có chữ "+" là bài của giáo trình B gộp vào.
+   ============================================================ */
+const LEVELS = [
+  { id:"l0", name:"Setup công cụ", hours:4, goal:"Có sẵn công cụ và file mẫu, mỗi buổi chỉ việc mở ra là vẽ.",
+    out:"Bộ cọ, file PSD mẫu.", ai:"",
+    reads:[["#meo","3 cách tự kiểm tra"],["#file","Cấu trúc PSD"]],
+    pass:"Mở file mẫu, vẽ được nét đầu tiên, bật tắt được layer đen trắng và cửa sổ 128px.",
+    tasks:[
+      ["l0-1","","Cài Photoshop (chính). Krita nếu muốn dùng Krita AI Diffusion ở Level 6"],
+      ["l0-2","","Có bảng vẽ (Wacom, XP-Pen) hoặc iPad + Apple Pencil. Không học vẽ bằng chuột"],
+      ["l0-3","","Chọn đủ 5 cọ: tròn cứng, cứng có độ mờ theo lực nhấn, mềm, texture, lasso đa giác"],
+      ["l0-4","","File PSD mẫu 2048×2048: guide khung 70–85%, layer bg_check (nền tối), cấu trúc group"],
+      ["l0-5","","Mở cửa sổ phụ 128px: Window → Arrange → New Window"],
+      ["l0-6","","Gán phím tắt lật ngang canvas, tạo layer đen trắng (tô đen, chế độ Color)"],
+    ]},
+  { id:"l1", name:"Hình khối, value, silhouette", hours:40, goal:"Nhìn một vật là thấy khối và sáng tối, thiết kế được hình dáng dễ nhận.",
+    out:"Trang luyện khối, 30 silhouette, 5 hình xám hoàn chỉnh.", ai:"Vẽ tay 100%. AI chỉ để tạo ảnh tham chiếu.",
+    reads:[["#game-art","Game art khác tranh minh họa"],["#hinh-khoi","Hình khối"],["#value","Value"]],
+    pass:"Đưa bài B1.5 ở cỡ 64px cho người khác xem, họ gọi đúng tên vật trong 1 giây.",
+    tasks:[
+      ["l1-a","+","Đồng xu vàng 2 bản: tranh minh họa và game asset. Viết 5 nhận xét so sánh"],
+      ["l1-1","B1.1","30 silhouette vật phẩm slot trong 60 phút, tô đen. Khoanh 5 cái dễ nhận nhất ở 64px"],
+      ["l1-b","+","Silhouette 10 symbol cổ điển: cherry, lemon, bell, 7, BAR, vương miện, rương, kim cương, Wild, Scatter"],
+      ["l1-2","B1.2","Cầu, trụ, hộp, nón dưới một nguồn sáng trên-trái, đủ 5 vùng sáng tối, chỉ tông xám"],
+      ["l1-3","B1.3","Đồng xu, rương, nén vàng bằng tông xám, dựng từ khối cơ bản, mỗi vật 3 góc nhìn"],
+      ["l1-c","+","5 vật bằng tông xám (rương, vương miện, chìa khóa, bình thuốc, ngọc lục bảo), rồi tô màu mà không mất value"],
+      ["l1-4","B1.4","Chép value 5 symbol slot đẹp trên ArtStation (study, không đăng)"],
+      ["l1-5","B1.5","Vẽ value hoàn chỉnh 5 silhouette tốt nhất của B1.1"],
+    ]},
+  { id:"l2", name:"Màu và vật liệu", hours:45, goal:"Vẽ được 8 vật liệu hay gặp nhất, nhìn là biết chất liệu gì. Đây là trọng tâm của art slot.",
+    out:"Bảng 8 vật liệu, bộ đá quý, đồng xu và nén vàng.", ai:"Vẽ tay 100%. AI chỉ để tạo ảnh tham chiếu.",
+    reads:[["#mau","Màu và bảng màu"],["#vat-lieu","Công thức vật liệu"],["#meo","Blend mode"]],
+    pass:"Người xem gọi đúng tên cả 8 vật liệu ở B2.1 mà không cần chú thích.",
+    tasks:[
+      ["l2-1","B2.1","8 quả cầu, mỗi quả một vật liệu, cùng một nguồn sáng"],
+      ["l2-2","B2.2","5 viên đá quý khác màu (đỏ, xanh lá, xanh dương, tím, vàng), cùng kiểu cắt"],
+      ["l2-3","B2.3","Lên màu 5 hình xám của B1.5 theo 2 cách: Gradient Map và tô trực tiếp. So sánh"],
+      ["l2-4","B2.4","1 đồng xu vàng và 1 nén vàng hoàn chỉnh"],
+      ["l2-a","+","Một vật (cốc) vẽ 4 vật liệu: vàng, đá, ngọc, gỗ. Giữ nguyên silhouette"],
+      ["l2-b","+","3 bảng màu (sang trọng, huyền bí, tươi sáng) cho theme Aztec, tô cùng một vương miện"],
+      ["l2-5","B2.5","Chép màu 3 symbol vật liệu khó (vàng, đá quý), rồi tự vẽ 1 vật mới cùng kiểu"],
+    ]},
+  { id:"l3", name:"Symbol hoàn chỉnh", hours:50, goal:"Vẽ một bộ symbol vật thể đi đủ các bước, có style guide, qua checklist.",
+    out:"Bộ low symbol, 2 vật phẩm quý, Wild, Scatter.", ai:"Vẽ tay trước, làm lại với AI, rồi so sánh.",
+    reads:[["#symbol","Loại symbol"],["#pipeline","Dây chuyền 9 bước"],["#workflow","Vẽ một symbol"]],
+    pass:"Đặt 9 symbol lên lưới 5×3, nhìn là thấy một bộ, qua toàn bộ checklist mục 18.",
+    tasks:[
+      ["l3-a","+","Điền bảng phân loại symbol ở mục 3: 6 low, 4 mid, 3 high, Wild, Scatter, Bonus"],
+      ["l3-1","B3.1","Style guide 1 trang cho theme mini đầu tiên (gợi ý: Lồng đèn rồng, 国风)"],
+      ["l3-2","B3.2","Bộ 5 low symbol A K Q J 10, PNG 512px"],
+      ["l3-3","B3.3","2 vật phẩm quý (rương báu, bình vàng) làm high symbol phụ"],
+      ["l3-4","B3.4","Wild và Scatter, mỗi cái có plate riêng"],
+      ["l3-b","+","Bài lớn: đầu báo vàng Aztec 512px, đủ 3 thumbnail, rough, line/shape, màu, sáng tối, vật liệu, glow, bản 64/128/256px"],
+      ["l3-5","B3.5","Làm lại B3.3 bằng AI (chế độ B), so thời gian và chất lượng với bản vẽ tay"],
+      ["l3-6","","Đặt 9 symbol lên mock reel 5×3, chạy checklist mục 18"],
+    ]},
+  { id:"l4", name:"Nhân vật và động vật", hours:60, goal:"Vẽ bán thân nhân vật và đầu động vật có cá tính, vẫn đọc được ở 64px.",
+    out:"4 high symbol cùng series.", ai:"Vẽ tay trước, làm lại với AI, rồi so sánh.",
+    reads:[["#hinh-khoi","Silhouette"],["#style","Style châu Á"]],
+    pass:"Tô đen 4 high symbol vẫn phân biệt được. Nhìn từ xa vẫn biết symbol nào giá cao nhất.",
+    tasks:[
+      ["l4-1","B4.1","20 thumbnail đầu nhân vật và động vật theo theme, chọn ra 4"],
+      ["l4-2","B4.2","Bảng 4 biểu cảm cho 1 nhân vật (vui, tự tin, ngạc nhiên…)"],
+      ["l4-a","+","Dùng AI tạo 10 concept (3 nền, 3 symbol, 2 nhân vật, 2 UI mood), chọn 1 và vẽ lại bằng tay"],
+      ["l4-3","B4.3","4 high symbol cùng series (rồng, cá chép, lân, một Thần Tài tự thiết kế), PNG 512px và PSD"],
+      ["l4-4","B4.4","Đặt 4 high, 5 low, Wild, Scatter vào mock reel 5×3"],
+    ]},
+  { id:"l5", name:"Nền, khung reel, UI, chữ", hours:35, goal:"Dựng màn base game hoàn chỉnh. Đây là phần bạn có lợi thế.",
+    out:"Màn base game ngang và dọc, logo, Big Win.", ai:"Dùng AI theo quy trình sản xuất (mục 16).",
+    reads:[["#nen","Nền và khung reel"],["#ui","Trạng thái nút, HUD"],["#meo","Chữ Big Win"]],
+    pass:"Mockup nhìn như game thật: symbol nổi hơn nền, UI không lẫn vào nền, chữ Big Win đọc rõ trên mọi nền.",
+    tasks:[
+      ["l5-1","B5.1","Nền base game 1920×1080 và 1080×1920, có vẽ dư mép, PSD phân lớp"],
+      ["l5-2","B5.2","Nền free spin: cùng địa điểm, đổi thời điểm"],
+      ["l5-3","B5.3","Khung reel 5×3, nút Spin, Auto, Bet +/−"],
+      ["l5-a","+","Nút Spin đủ 6 trạng thái: normal, hover, pressed, disabled, spinning, auto"],
+      ["l5-b","+","HUD mobile: Balance, Bet, Win, Spin, Auto, Menu, Paytable, Settings"],
+      ["l5-4","B5.4","Logo game, Big / Mega / Super Win, bộ chữ số"],
+      ["l5-5","B5.5","Ghép mockup màn hình trong Figma, cả ngang và dọc"],
+    ]},
+  { id:"l6", name:"Sản xuất: tách layer, Spine, VFX, AI", hours:65, goal:"Làm một theme thứ hai từ đầu bằng quy trình AI, có đặt giờ, và đóng gói thành case study.",
+    out:"1 theme hoàn chỉnh, 1 symbol có animation, 2 trang portfolio.", ai:"Dùng AI theo quy trình sản xuất (mục 16).",
+    reads:[["#anim","Animation và VFX"],["#ai","AI và ComfyUI"],["#file","Giao file"],["#portfolio","Portfolio"]],
+    pass:"Theme thứ hai xong trong khoảng 5–7 ngày làm việc, qua checklist, file giao đúng quy cách.",
+    tasks:[
+      ["l6-1","B6.1","Tách layer high symbol đẹp nhất của Level 4, vẽ bù phần bị che"],
+      ["l6-2","B6.2","Spine: idle và win cho symbol đó (idle khoảng 3 giây, win khoảng 0.8 giây, glow nhấp nháy)"],
+      ["l6-3","B6.3","Big Win: start, idle, end; coin burst, confetti, tia sáng, chỗ chừa cho số tăng dần"],
+      ["l6-a","+","10 symbol concept bằng ComfyUI: 3 low, 3 mid, 2 high, Wild, Scatter"],
+      ["l6-b","+","3 nền cùng theme bằng ComfyUI: base game, free spin, bonus, đều chừa vùng reel"],
+      ["l6-4","B6.4","Theme thứ 2 làm từ đầu bằng quy trình AI, có đặt giờ: 4 high, 5 low, Wild, Scatter, nền, khung reel, logo, Big Win"],
+      ["l6-c","+","Folder project đúng quy ước đặt tên (mục 17), có README.md"],
+      ["l6-5","B6.5","Trình bày 2 theme thành case study cho acehaus"],
+    ]},
+];
+
+/* ============================================================
+   DỮ LIỆU KHÁC
+   ============================================================ */
+const PLAN_ROWS = [["Low-pay",6],["Mid-pay",4],["High-pay",3],["Wild",1],["Scatter",1],["Bonus",1]];
+
+const MATS = [
+  { k:"gold", name:"Vàng kim loại", src:"Giáo trình A, mục 5.2 (kinh nghiệm nghề)",
+    swatch:[["#C8902A","Màu nền"],["#5E3210","Bóng"],["#F7D56B","Vùng sáng"],["#FFF4CC","Gần trắng ấm"]],
+    steps:["<b>Màu nền:</b> vàng cam đậm. Không dùng vàng chanh làm màu nền.","<b>Bóng:</b> nâu đỏ. Không dùng đen hay xám, vàng sẽ thành bẩn.","<b>Phản chiếu:</b> kim loại gần như không có vùng chuyển mềm. Vẽ các dải sáng tối xen kẽ chạy theo khối, cạnh sắc. Mặt hướng lên phản chiếu trời nên sáng, mặt hướng xuống tối hơn.","<b>Vùng sáng:</b> vàng sáng, rồi gần trắng ấm ở chỗ hướng thẳng về nguồn sáng.","<b>Rim light:</b> viền sáng mảnh ở cạnh tối, có thể mang màu môi trường (xanh ngọc, cam).","<b>Điểm lấp lánh:</b> 1–2 điểm trắng và một sparkle 4 cánh ở chế độ Linear Dodge. Dùng ít thôi."] },
+  { k:"gem", name:"Đá quý cắt mài", src:"Giáo trình A, mục 5.3",
+    steps:["Vẽ hình và các mặt cắt (mặt trên, vành, đáy) bằng lasso đa giác.","Tô màu trung bình cho cả viên.","Mỗi mặt cắt là <b>một value phẳng</b>. Xen kẽ mặt sáng, mặt tối để tạo cảm giác lấp lánh.","<b>Luật ngược:</b> ánh sáng xuyên qua viên đá. Mặt trên gần nguồn sáng có highlight sắc ở bề mặt, nhưng phần bên trong phía dưới, xa nguồn sáng, lại sáng rực.","Độ rực cao nhất ở vùng giữa sáng và tối. Vùng tối nhất vẫn giữ màu (đỏ đậm), không thành đen.","Highlight sắc trên mặt trên, thêm 1 sparkle.","Glow nhẹ cùng màu bên ngoài viên đá (Linear Dodge, độ mờ thấp)."] },
+  { k:"jade", name:"Ngọc, vật liệu trong mờ", src:"Giáo trình A mục 5.4, B bài 7",
+    steps:["Cạnh mềm, chuyển màu mượt.","Chỗ mỏng (rìa, chỗ cong) <b>sáng hơn và rực hơn</b> vì ánh sáng xuyên qua. Mép có thể đậm, giữa sáng.","Bóng là màu đậm và rực (xanh đậm với ngọc xanh), không phải xám.","Highlight mềm, thêm 1 điểm sáng sắc nhỏ để thấy bề mặt bóng.","Thêm vân mờ bên trong và glow nhẹ cùng màu."] },
+  { k:"stone", name:"Đá", src:"Giáo trình B, bài 7",
+    steps:["Màu nền đá.","Bóng theo khối. Bóng mềm hơn vàng, ít phản chiếu.","Thêm texture noise nhỏ. Không lạm dụng noise.","Thêm vết nứt nhỏ, có thể thêm rêu, bụi.","Highlight ở cạnh trên."] },
+  { k:"wood", name:"Gỗ", src:"Giáo trình B, bài 7",
+    steps:["Màu nền gỗ: nâu, đỏ nâu hoặc vàng nâu.","Vẽ vân theo hướng bề mặt (vân chạy theo khối).","Thêm bóng mềm, bề mặt hơi nhám.","Thêm highlight, ít bóng.","Thêm chi tiết kim loại trang trí nếu cần (góc rương, bản lề)."] },
+  { k:"fx", name:"Lửa, glow, sparkle", src:"Giáo trình A, mục 5.7",
+    steps:["<b>Glow:</b> cọ mềm, chế độ Linear Dodge, lõi rực rồi tối dần, độ mờ thấp. Tách layer riêng <code>fx_glow</code>.","<b>Lửa:</b> lõi gần trắng → vàng → cam → đỏ ở mép. Lưỡi lửa uốn theo một hướng chung, đầu nhọn.","<b>Sparkle:</b> chữ thập 4 cánh, cánh ngang dài hơn cánh dọc, lõi trắng, có vòng sáng nhỏ. Mỗi symbol 1–3 cái."] },
+];
+
+const QC = [
+  ["Đúng brief",[["qc-brief","Đúng brief, đúng số lượng asset"],["qc-size","Đúng kích thước"],["qc-pal","Đúng bảng màu"]]],
+  ["Hình dáng và độ dễ đọc",[["qc-sil","Tô đen, thu về 64px: mỗi symbol có hình riêng"],["qc-25","Thu về 25% vẫn đọc ra. Nhìn là biết symbol nào giá cao nhất"],["qc-ws","Wild, Scatter dễ nhận diện ngay"],["qc-fill","Vật thể chiếm 70–85% khung, cả bộ cùng tâm"]]],
+  ["Ánh sáng và màu",[["qc-light","Cả bộ dùng chung một nguồn sáng"],["qc-col","Mỗi symbol tối đa 3 màu chủ đạo. High rực, low phẳng hơn"],["qc-val","Bản đen trắng có đủ 3 tông sáng, trung, tối"]]],
+  ["Màn hình",[["qc-reel","Nền không che reel, symbol nổi hơn nền"],["qc-state","UI có đủ trạng thái"],["qc-mock","Đã test trên mockup màn hình, cả ngang và dọc"]]],
+  ["Kỹ thuật",[["qc-edge","Viền đều (khoảng 4px ở 256px). Trên nền tối không có halo trắng"],["qc-png","PNG nền trong suốt, đúng tên file (chữ thường, gạch dưới)"],["qc-text","Chữ set font tay. Chữ số giao dạng bộ ký tự, không bake vào animation"],["qc-psd","PSD phân lớp, đã vẽ bù phần bị che, tên layer theo quy ước Spine"],["qc-ai","Không còn lỗi do AI. Đã lưu prompt, seed, workflow của ảnh AI"],["qc-readme","Có README.md: danh sách asset, version Spine, ghi chú dùng AI"]]],
+  ["Pháp lý",[["qc-ip","Không logo, nhân vật, tên game thật. Không prompt kiểu “in the style of [studio]”"]]],
+];
+
+const DICT = [
+  ["老虎机","Máy slot","Slot machine"],["棋牌","Game bài, cờ","Card and board games"],["捕鱼","Game bắn cá","Fishing game"],
+  ["原画 / 原画师","Concept art / họa sĩ concept","Concept art / concept artist"],["主美","Trưởng nhóm art","Lead artist, art director"],
+  ["美术规范","Quy chuẩn art","Art spec, style guide"],["风格定调 / 定调图","Định style / ảnh định style","Style key"],["资源清单","Danh sách asset","Asset list"],
+  ["草图","Bản phác","Sketch, thumbnail"],["线稿","Bản nét","Line art"],["黑白稿","Bản đen trắng","Value study, grayscale"],["色稿","Bản màu","Color comp"],
+  ["细化 / 精修","Vẽ chi tiết / hoàn thiện","Rendering, polish"],["临摹","Chép tranh để học","Master study"],["厚涂","Vẽ dày","Painterly"],
+  ["赛璐璐","Tô màu kiểu anime","Cel-shading"],["三渲二","3D render giả hoạt hình 2D (khác với 3D render rồi vẽ đè)","Toon shading, NPR"],["Q版","Chibi","Chibi, super-deformed"],
+  ["国风 / 国潮","Phong cách Trung Hoa truyền thống / pha hiện đại","Chinese traditional / neo-Chinese style"],["剪影","Hình bóng","Silhouette"],["光源","Nguồn sáng","Light source"],
+  ["明暗交界线","Đường ranh sáng tối","Terminator line"],["反光","Ánh phản xạ","Reflected light"],["高光","Điểm sáng nhất","Highlight, specular"],["投影","Bóng đổ","Cast shadow"],
+  ["固有色","Màu vốn có","Local color"],["环境色","Màu môi trường","Environment color"],["冷暖","Nóng lạnh","Color temperature"],["质感","Chất liệu","Material, texture feel"],
+  ["描边","Viền","Outline, stroke"],["外发光","Phát sáng ngoài","Outer glow"],["艺术字","Chữ nghệ thuật","Stylized lettering"],["百搭","Symbol Wild","Wild"],
+  ["免费游戏 / 免费旋转","Free spin","Free spins"],["卷轴","Reel","Reel"],["拆分 / 补全","Tách layer / vẽ bù phần bị che","Split / fill occluded parts"],
+  ["骨骼动画","Animation khung xương","Skeletal animation"],["动效 / 特效","Animation / hiệu ứng","Motion / VFX"],["待机动画 / 中奖动画","Animation chờ / animation trúng","Idle / win animation"],
+  ["切图","Cắt và xuất file","Slicing, export"],["九宫格","Chia 9 ô để co giãn","9-slice"],["图集","Gói ảnh","Atlas, spritesheet"],["走查","Soát lại thiết kế trong bản build","Design QA"],
+  ["人天","Người-ngày (đơn vị báo giá)","Man-day"],["整包","Nhận gói trọn","Full-package outsourcing"],
+];
+
+const VIEW_TEXT = {
+  color:{ t:"Bản đầy đủ", d:"Symbol mẫu áp đúng công thức: vàng có dải sáng tối xen kẽ, bóng nâu đỏ, viền nâu đậm, rim light xanh ngọc ở cạnh phải, đá quý theo luật ngược, 1 sparkle. Bấm các nút để kiểm tra như artist slot." },
+  gray:{ t:"Câu hỏi: có đủ 3 tông sáng, trung, tối không?", d:"Bản đạt vẫn đọc rõ khối và điểm nhấn. Bản lỗi value có màu khác nhau nhưng cùng độ sáng, nên thành một mảng xám. Màu không cứu được value phẳng." },
+  sil:{ t:"Câu hỏi: tô đen vẫn nhận ra là gì?", d:"Vương miện có 5 đỉnh và dải đai nên vẫn nhận ra. Một symbol tròn trịa không có đặc điểm ở rìa sẽ trượt bài này." },
+};
+const TOG_TEXT = {
+  small:"<b>64px:</b> cỡ gần với lúc hiển thị trên điện thoại. Chi tiết nào biến mất ở đây thì không đáng vẽ.",
+  flip:"<b>Lật ngang:</b> chỗ lệch, méo hiện ra ngay vì mắt hết quen với hình.",
+  dark:"<b>Nền tối:</b> kiểm tra viền halo trắng và xem symbol có tách khỏi nền reel không.",
+};
+
+/* ============================================================
+   TIỆN ÍCH + LƯU TRỮ (localStorage, bọc try/catch)
+   ============================================================ */
+const KEY = "digital-art-slot:";
+const store = {
+  get(k, f){ try { const v = localStorage.getItem(KEY + k); return v === null ? f : JSON.parse(v); } catch { return f; } },
+  set(k, v){ try { localStorage.setItem(KEY + k, JSON.stringify(v)); return true; } catch { return false; } },
+};
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+let checks = store.get("checks", {}), qc = store.get("qc", {}), notes = store.get("notes", {});
+
+function toast(msg){ const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove("show"), 1800); }
+async function copyText(text){
+  try { await navigator.clipboard.writeText(text); }
+  catch { const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); } catch {} ta.remove(); }
+  toast("Đã sao chép");
+}
+document.addEventListener("click", e => { const b = e.target.closest("[data-copy]"); if (b) copyText($("#" + b.dataset.copy).textContent); });
+
+/* ============================================================
+   BÀN KIỂM TRA SYMBOL (hero)
+   ============================================================ */
+const view = { v:"good", m:"color", small:false, flip:false, dark:false };
+function renderChecker(){
+  const st = $("#stage");
+  $("#symGood").toggleAttribute("hidden", view.v !== "good"); $("#symBad").toggleAttribute("hidden", view.v !== "bad");
+  st.classList.toggle("gray", view.m === "gray"); st.classList.toggle("sil", view.m === "sil");
+  ["small","flip","dark"].forEach(k => st.classList.toggle(k, view[k]));
+  $("#stageTag").textContent = view.small ? "64px" : "256px";
+  $$("#verSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === view.v));
+  $$("#viewSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.m === view.m));
+  $$(".tog").forEach(b => b.setAttribute("aria-pressed", view[b.dataset.t]));
+  const vt = VIEW_TEXT[view.m];
+  const extra = ["small","flip","dark"].filter(k => view[k]).map(k => `<p>${TOG_TEXT[k]}</p>`).join("");
+  const badNote = view.v === "bad" && view.m === "color" ? "<p><b>Bản lỗi value:</b> nhìn màu thì tạm được. Bấm “Đen trắng” để thấy vấn đề.</p>" : "";
+  $("#explain").innerHTML = `<b class="t">${vt.t}</b><p>${vt.d}</p>${badNote}${extra}`;
+}
+$("#verSeg").addEventListener("click", e => { const b = e.target.closest("button"); if (b){ view.v = b.dataset.v; renderChecker(); } });
+$("#viewSeg").addEventListener("click", e => { const b = e.target.closest("button"); if (b){ view.m = b.dataset.m; renderChecker(); } });
+$$(".tog").forEach(b => b.addEventListener("click", () => { view[b.dataset.t] = !view[b.dataset.t]; renderChecker(); }));
+renderChecker();
+
+/* ============================================================
+   LỘ TRÌNH: render level, nhịp học, tiến độ
+   ============================================================ */
+const allTasks = LEVELS.flatMap((l, i) => l.tasks.map(t => ({ lv:i, id:t[0], code:t[1], text:t[2] })));
+// Thang value cho ô số level: Level 0 sáng nhất, Level 6 tối nhất
+const RAMP = ["--v0","--v1","--v2","--v3","--v4","--v5","--v6"];
+$("#levels").innerHTML = LEVELS.map((l, i) => `
+  <details class="level" id="${l.id}">
+    <summary>
+      <span class="lv-num" style="--lv:var(${RAMP[i]});--lvi:${i < 3 ? "#1C1C1E" : "#F4F4F4"}">${i}</span>
+      <span class="lv-title">${esc(l.name)}<span class="lv-meta">${l.hours} giờ (ước tính)</span></span>
+      <span class="lv-right"><span class="js-lv-count">0/${l.tasks.length}</span><span class="meter"><span class="js-lv-bar"></span></span></span>
+    </summary>
+    <div class="lv-body">
+      <p class="goal">${esc(l.goal)}</p>
+      <div class="out"><strong>Đầu ra:</strong> ${esc(l.out)}<br><strong>Tiêu chí đạt:</strong> ${esc(l.pass)}</div>
+      ${l.ai ? `<div class="ai-rule">AI: ${esc(l.ai)}</div>` : ""}
+      <div class="reads">Đọc trước: ${l.reads.map(([h, t]) => `<a href="${h}">${esc(t)}</a>`).join(", ")}</div>
+      <ul class="check">${l.tasks.map(([id, code, t]) => `<li><label><input type="checkbox" id="t-${id}" data-task="${id}"><span>${code ? `<span class="code-id">${code === "+" ? "+B" : code}</span>` : ""}${esc(t)}</span></label></li>`).join("")}</ul>
+      <div class="note-wrap"><label for="n-${l.id}">Ghi chú Level ${i}: kết quả, thời gian thật, lỗi lớn nhất</label>
+        <textarea id="n-${l.id}" data-note="${l.id}"></textarea><div class="saved" data-saved-for="${l.id}"></div></div>
+    </div>
+  </details>`).join("");
+$$("[data-task]").forEach(c => c.checked = !!checks[c.dataset.task]);
+
+function renderPace(){
+  const h = Math.max(1, Math.min(60, +$("#pace").value || 6));
+  store.set("pace", h);
+  let cum = 0, l3 = 0;
+  $("#paceTable").innerHTML = LEVELS.map((l, i) => {
+    cum += l.hours; const w = Math.ceil(cum / h); if (i === 3) l3 = w;
+    return `<tr><td>Level ${i}: ${esc(l.name)}</td><td class="plain">${l.hours}</td><td class="plain">Tuần ${w}</td></tr>`;
+  }).join("");
+  $("#paceSum").innerHTML = `Với ${h} giờ/tuần: xong Level 3 (nhận việc nhỏ) sau khoảng <b>${l3} tuần</b>, xong cả giáo trình sau khoảng <b>${Math.ceil(cum / h)} tuần</b>.`;
+}
+$("#pace").value = store.get("pace", 6);
+$("#pace").addEventListener("input", renderPace); renderPace();
+
+function updateProgress(){
+  const done = allTasks.filter(t => checks[t.id]).length, total = allTasks.length;
+  $$(".js-bar").forEach(b => b.style.width = Math.round(done / total * 100) + "%");
+  $$(".js-done").forEach(e => e.textContent = done); $$(".js-total").forEach(e => e.textContent = total);
+  LEVELS.forEach(l => {
+    const el = document.getElementById(l.id), d = l.tasks.filter(t => checks[t[0]]).length;
+    el.querySelector(".js-lv-count").textContent = `${d}/${l.tasks.length}`;
+    el.querySelector(".js-lv-bar").style.width = (d / l.tasks.length * 100) + "%";
+    el.classList.toggle("done", d === l.tasks.length);
+  });
+  const next = allTasks.find(t => !checks[t.id]);
+  if (next){ $("#nextText").textContent = `Level ${next.lv}: ${next.text}`; $("#nextBtn").dataset.task = next.id; $("#nextBtn").textContent = "Mở bài này"; }
+  else { $("#nextText").textContent = "Xong cả 7 level. Đưa 2 theme vào portfolio acehaus."; delete $("#nextBtn").dataset.task; $("#nextBtn").textContent = "Xem lộ trình"; }
+  const q = Object.values(qc).filter(Boolean).length, qt = QC.reduce((s, g) => s + g[1].length, 0);
+  $("#qcCount").textContent = `${q}/${qt} mục đạt`;
+}
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.dataset.task){ checks[t.dataset.task] = t.checked; store.set("checks", checks); updateProgress(); }
+  if (t.dataset.qc){ qc[t.dataset.qc] = t.checked; store.set("qc", qc); updateProgress(); }
+});
+$("#nextBtn").addEventListener("click", e => {
+  const id = e.currentTarget.dataset.task; if (!id) return;
+  e.preventDefault();
+  const box = document.getElementById("t-" + id); box.closest("details").open = true;
+  box.closest("li").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block:"center" });
+  box.focus({ preventScroll:true });
+});
+const firstOpen = LEVELS.find(l => l.tasks.some(t => !checks[t[0]]));
+if (firstOpen) document.getElementById(firstOpen.id).open = true;
+
+/* ============================================================
+   BẢNG SYMBOL, VẬT LIỆU, CHECKLIST, TỪ ĐIỂN, TÊN FILE
+   ============================================================ */
+$("#planTable").innerHTML = PLAN_ROWS.flatMap(([type, n]) => Array.from({ length:n }, (_, i) => {
+  const k = `plan-${type.toLowerCase().replace(/[^a-z]/g, "")}-${i}`;
+  return `<tr><td>${type}${n > 1 ? " " + (i + 1) : ""}</td>
+    <td><input class="input" data-note="${k}-name" aria-label="${type} ${i + 1}: tên"></td>
+    <td><input class="input" data-note="${k}-color" aria-label="${type} ${i + 1}: màu"></td>
+    <td><input class="input" data-note="${k}-detail" aria-label="${type} ${i + 1}: mức chi tiết"></td></tr>`;
+})).join("");
+
+let matK = "gold";
+function renderMat(){
+  const m = MATS.find(x => x.k === matK);
+  $$("#matTabs .mat-tab").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === matK));
+  const sw = m.swatch ? `<div class="pal" style="grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:14px">${m.swatch.map(([c, l]) => `<div class="sw"><i style="background:${c}"></i><span>${l}<small>${c}</small></span></div>`).join("")}</div>` : "";
+  $("#matPanel").innerHTML = `<h4>${esc(m.name)}</h4>${sw}<ol>${m.steps.map(s => `<li>${s}</li>`).join("")}</ol><p class="mat-src">Nguồn: ${esc(m.src)}${m.swatch ? ". Mã màu là điểm xuất phát, chỉnh theo theme" : ""}.</p>`;
+}
+$("#matTabs").innerHTML = MATS.map(m => `<button class="mat-tab" data-k="${m.k}" aria-pressed="false">${esc(m.name)}</button>`).join("");
+$("#matTabs").addEventListener("click", e => { const b = e.target.closest(".mat-tab"); if (b){ matK = b.dataset.k; renderMat(); } });
+renderMat();
+
+$("#qcList").innerHTML = QC.map(([g, items]) => `<h4>${esc(g)}</h4><ul class="check">${items.map(([id, t]) => `<li><label><input type="checkbox" data-qc="${id}"><span>${esc(t)}</span></label></li>`).join("")}</ul>`).join("");
+$$("[data-qc]").forEach(c => c.checked = !!qc[c.dataset.qc]);
+$("#qcReset").addEventListener("click", () => { qc = {}; store.set("qc", qc); $$("[data-qc]").forEach(c => c.checked = false); updateProgress(); toast("Đã bỏ chọn checklist"); });
+
+function renderDict(){
+  const q = $("#dictQ").value.trim().toLowerCase();
+  const rows = DICT.filter(r => !q || r.join(" ").toLowerCase().includes(q));
+  $("#dictTable").innerHTML = rows.length ? rows.map(([z, v, en]) => `<tr><td><button class="btn small dict-zh" data-zh="${esc(z)}" title="Sao chép">${esc(z)}</button></td><td class="plain">${esc(v)}</td><td class="plain">${esc(en)}</td></tr>`).join("")
+    : `<tr><td colspan="3" class="plain">Không có mục nào khớp “${esc(q)}”. Thử từ ngắn hơn.</td></tr>`;
+  $("#dictCount").textContent = `${rows.length}/${DICT.length} mục`;
+}
+$("#dictQ").addEventListener("input", renderDict);
+$("#dictTable").addEventListener("click", e => { const b = e.target.closest("[data-zh]"); if (b) copyText(b.dataset.zh); });
+renderDict();
+
+/* Tên file: folder theo theme + nhóm, tên = tiền tố loại + tên + trạng thái + cỡ + version */
+const FOLDER = { sym:"symbols", bg:"bg", btn:"ui", panel:"ui", icon:"ui", txt:"text", fx:"fx" };
+function renderName(){
+  const clean = s => s.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
+  const th = clean($("#nTheme").value) || "theme", t = $("#nType").value, n = clean($("#nName").value) || "name";
+  const parts = [t, n, $("#nState").value, clean($("#nSize").value), "v" + String(Math.max(1, +$("#nVer").value || 1)).padStart(2, "0")].filter(Boolean);
+  $("#nOut").textContent = `theme_${th.replace(/^theme_/, "")}/${FOLDER[t]}/${parts.join("_")}.png`;
+}
+["#nTheme","#nType","#nName","#nState","#nSize","#nVer"].forEach(s => $(s).addEventListener("input", renderName)); renderName();
+
+/* ============================================================
+   GHI CHÚ (mọi ô có data-note đều tự lưu)
+   ============================================================ */
+$$("[data-note]").forEach(el => el.value = notes[el.dataset.note] || "");
+document.addEventListener("input", e => {
+  const el = e.target; if (!el.dataset || !el.dataset.note) return;
+  const k = el.dataset.note; clearTimeout(el._t);
+  el._t = setTimeout(() => { // đợi ngừng gõ 400ms rồi mới lưu
+    notes[k] = el.value; const ok = store.set("notes", notes);
+    const s = document.querySelector(`[data-saved-for="${k}"]`);
+    if (s) s.textContent = ok ? "Đã lưu" : "Không lưu được: trình duyệt đang chặn bộ nhớ. Hãy xuất file .md";
+  }, 400);
+});
+
+function exportMd(){
+  const d = new Date(), pad = n => String(n).padStart(2, "0"), day = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const done = allTasks.filter(t => checks[t.id]).length;
+  let md = `# Tiến độ Digital art cho game slot (${day})\n\nĐã xong ${done}/${allTasks.length} bài. Nhịp học: ${store.get("pace", 6)} giờ/tuần.\n`;
+  LEVELS.forEach((l, i) => {
+    md += `\n## Level ${i}: ${l.name}\n\n` + l.tasks.map(([id, code, t]) => `- [${checks[id] ? "x" : " "}] ${code && code !== "+" ? code + " " : ""}${t}`).join("\n") + "\n";
+    if (notes[l.id]) md += `\n**Ghi chú:**\n\n${notes[l.id]}\n`;
+  });
+  const planRows = PLAN_ROWS.flatMap(([type, n]) => Array.from({ length:n }, (_, i) => {
+    const k = `plan-${type.toLowerCase().replace(/[^a-z]/g, "")}-${i}`;
+    const name = notes[k + "-name"], col = notes[k + "-color"], det = notes[k + "-detail"];
+    return name || col || det ? `| ${type} ${i + 1} | ${name || ""} | ${col || ""} | ${det || ""} |` : null;
+  })).filter(Boolean);
+  if (planRows.length) md += `\n## Bảng phân loại symbol${notes["plan-theme"] ? ": " + notes["plan-theme"] : ""}\n\n| Loại | Tên | Màu | Chi tiết |\n|---|---|---|---|\n${planRows.join("\n")}\n`;
+  if (notes.general) md += `\n## Ghi chú chung\n\n${notes.general}\n`;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([md], { type:"text/markdown" })); a.download = `digital-art-tien-do-${day}.md`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000); toast("Đã xuất file .md");
+}
+$("#exportBtn").addEventListener("click", exportMd);
+$("#resetBtn").addEventListener("click", () => {
+  if (!confirm("Xóa toàn bộ tiến độ, checklist, bảng symbol và ghi chú trên trình duyệt này? Không hoàn tác được. Nên xuất file .md trước.")) return;
+  checks = {}; qc = {}; notes = {}; store.set("checks", checks); store.set("qc", qc); store.set("notes", notes);
+  $$("[data-task],[data-qc]").forEach(c => c.checked = false); $$("[data-note]").forEach(el => el.value = "");
+  updateProgress(); toast("Đã xóa");
+});
+
+/* ============================================================
+   DRAWER, MỤC LỤC MOBILE, THEME, SCROLLSPY
+   ============================================================ */
+const drawer = $("#drawer"), nScrim = $("#nScrim"), side = $("#side"), scrim = $("#scrim");
+function openNotes(){ drawer.classList.add("show"); nScrim.classList.add("show"); drawer.setAttribute("aria-hidden", "false"); setTimeout(() => $("#genNote").focus(), 50); }
+function closeNotes(){ drawer.classList.remove("show"); nScrim.classList.remove("show"); drawer.setAttribute("aria-hidden", "true"); }
+function closeSide(){ side.classList.remove("show"); scrim.classList.remove("show"); $("#tocBtn").setAttribute("aria-expanded", "false"); }
+$$("[data-open-notes]").forEach(b => b.addEventListener("click", () => { closeSide(); openNotes(); }));
+$("#drawerClose").addEventListener("click", closeNotes); nScrim.addEventListener("click", closeNotes);
+$("#tocBtn").addEventListener("click", () => { const on = !side.classList.contains("show"); side.classList.toggle("show", on); scrim.classList.toggle("show", on); $("#tocBtn").setAttribute("aria-expanded", on); });
+scrim.addEventListener("click", closeSide);
+document.addEventListener("click", e => { if (e.target.closest('#toc a, .reads a')) closeSide(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape"){ closeNotes(); closeSide(); } });
+
+const applyTheme = t => t ? document.documentElement.setAttribute("data-theme", t) : document.documentElement.removeAttribute("data-theme");
+applyTheme(store.get("theme", ""));
+$("#themeBtn").addEventListener("click", () => {
+  const cur = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const next = cur === "dark" ? "light" : "dark"; applyTheme(next); store.set("theme", next);
+});
+
+const tocLinks = $$("#toc a");
+const spy = new IntersectionObserver(entries => entries.forEach(en => {
+  if (en.isIntersecting) tocLinks.forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + en.target.id));
+}), { rootMargin:"-20% 0px -70% 0px" });
+$$("section.sec[id]").forEach(s => spy.observe(s));
+
+updateProgress();
+</script>
+</body>
+</html>

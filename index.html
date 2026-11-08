@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>HTML Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Be Vietnam Pro: hỗ trợ dấu tiếng Việt đầy đủ -->
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap&subset=vietnamese" rel="stylesheet">
+<style>
+  /* ===== Tokens màu: sáng mặc định, tối theo hệ thống hoặc nút chuyển ===== */
+  :root{
+    --bg:#f5f3ee; --surface:#ffffff; --surface-2:#efece5; --text:#1c1a17; --muted:#6c675e; --faint:#9a948a;
+    --line:#e3dfd6; --accent:#1f4fd1; --accent-soft:#e7edfc; --focus:#1f4fd1;
+    /* Màu từng thể loại (chữ + nền nhạt) */
+    --c-web:#1f4fd1;   --c-web-s:#e7edfc;
+    --c-concept:#c2410c; --c-concept-s:#fdeee4;
+    --c-learn:#13805f; --c-learn-s:#e1f3ec;
+    --c-tool:#7a3fb0;  --c-tool-s:#f1e8f9;
+    --c-life:#9a6a10;  --c-life-s:#f8efdc;
+    --shadow:0 1px 2px rgba(28,26,23,.04),0 4px 16px rgba(28,26,23,.05);
+    --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#121210; --surface:#1b1a18; --surface-2:#24231f; --text:#ece9e2; --muted:#a39d92; --faint:#7a756c;
+      --line:#2f2d29; --accent:#86a3f2; --accent-soft:#222b42; --focus:#86a3f2;
+      --c-web:#86a3f2;   --c-web-s:#222b42;
+      --c-concept:#f0996a; --c-concept-s:#3a2519;
+      --c-learn:#5fc9a3; --c-learn-s:#18332a;
+      --c-tool:#c49ae8;  --c-tool-s:#2e2340;
+      --c-life:#e0b75e;  --c-life-s:#352a16;
+      --shadow:none;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#121210; --surface:#1b1a18; --surface-2:#24231f; --text:#ece9e2; --muted:#a39d92; --faint:#7a756c;
+    --line:#2f2d29; --accent:#86a3f2; --accent-soft:#222b42; --focus:#86a3f2;
+    --c-web:#86a3f2;   --c-web-s:#222b42;
+    --c-concept:#f0996a; --c-concept-s:#3a2519;
+    --c-learn:#5fc9a3; --c-learn-s:#18332a;
+    --c-tool:#c49ae8;  --c-tool-s:#2e2340;
+    --c-life:#e0b75e;  --c-life-s:#352a16;
+    --shadow:none;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 "Be Vietnam Pro",system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  :focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:6px}
+  .wrap{max-width:1120px;margin:0 auto;padding:40px 16px 72px}
+
+  /* ===== Header ===== */
+  .top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:28px}
+  .eyebrow{font:500 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  h1{font-size:clamp(28px,4.5vw,40px);line-height:1.1;letter-spacing:-.025em;margin:10px 0 8px;font-weight:700}
+  .lede{color:var(--muted);margin:0;max-width:58ch}
+  .icon-btn{flex:none;width:40px;height:40px;display:grid;place-items:center;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:10px;cursor:pointer}
+  .icon-btn:hover{background:var(--surface-2)}
+
+  /* ===== Hàng số liệu ===== */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:28px}
+  .stat{background:var(--surface);padding:16px 18px}
+  .stat b{display:block;font-size:24px;letter-spacing:-.02em;font-weight:700;font-variant-numeric:tabular-nums}
+  .stat span{font-size:13px;color:var(--muted)}
+
+  /* ===== Thanh công cụ ===== */
+  .toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:12px}
+  .search{flex:1 1 260px;position:relative}
+  .search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--faint)}
+  .search input{width:100%;height:42px;padding:0 12px 0 38px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text);font:inherit}
+  .search input::placeholder{color:var(--faint)}
+  .seg{display:inline-flex;background:var(--surface-2);border-radius:10px;padding:3px}
+  .seg button{border:0;background:none;color:var(--muted);font:500 13px/1 inherit;font-family:inherit;padding:0 14px;height:36px;border-radius:8px;cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:32px}
+  .chip{border:1px solid var(--line);background:var(--surface);color:var(--muted);font:500 13px/1 inherit;font-family:inherit;height:34px;padding:0 12px;border-radius:999px;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+  .chip .dot{width:8px;height:8px;border-radius:50%;background:var(--c)}
+  .chip .n{font-family:var(--mono);font-size:11px;color:var(--faint)}
+  .chip[aria-pressed="true"]{background:var(--text);border-color:var(--text);color:var(--bg)}
+  .chip[aria-pressed="true"] .n{color:inherit;opacity:.7}
+
+  /* ===== Nhóm + lưới card ===== */
+  .group{margin-bottom:36px}
+  .group-h{display:flex;align-items:baseline;gap:10px;margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+  .group-h h2{font-size:17px;margin:0;font-weight:600;letter-spacing:-.01em}
+  .group-h .n{font:12px var(--mono);color:var(--faint)}
+  .group-h .desc{font-size:13px;color:var(--muted);margin-left:auto;text-align:right}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+
+  .card{position:relative;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--shadow);transition:border-color .15s,transform .15s}
+  .card:hover{border-color:var(--c);transform:translateY(-1px)}
+  .card-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px}
+  .tag{font:600 11px/1 inherit;font-family:inherit;letter-spacing:.02em;color:var(--c);background:var(--cs);padding:6px 9px;border-radius:6px}
+  .date{font:12px var(--mono);color:var(--faint);font-variant-numeric:tabular-nums}
+  .card h3{font-size:16px;line-height:1.35;margin:0 0 6px;font-weight:600;letter-spacing:-.01em}
+  /* Cả card bấm được: link phủ toàn bộ card */
+  .card h3 a{text-decoration:none}
+  .card h3 a::after{content:"";position:absolute;inset:0;border-radius:14px}
+  .card p{margin:0 0 16px;color:var(--muted);font-size:14px}
+  .meta{margin-top:auto;display:flex;justify-content:space-between;align-items:center;gap:10px;padding-top:12px;border-top:1px dashed var(--line)}
+  .path{font:11.5px/1.4 var(--mono);color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .open{flex:none;font-size:13px;font-weight:600;color:var(--c);display:inline-flex;align-items:center;gap:4px}
+  .note{display:inline-block;margin:-6px 0 14px;font-size:12px;color:var(--c-concept)}
+
+  .empty{text-align:center;padding:56px 16px;color:var(--muted);border:1px dashed var(--line);border-radius:14px}
+
+  /* ===== Hướng dẫn thêm file ===== */
+  details.howto{margin-top:48px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px 18px}
+  details.howto summary{cursor:pointer;padding:14px 0;font-weight:600;list-style:none;display:flex;justify-content:space-between}
+  details.howto summary::after{content:"+";color:var(--faint);font-weight:400}
+  details.howto[open] summary::after{content:"–"}
+  details.howto ol{margin:0 0 16px;padding-left:20px;color:var(--muted)}
+  details.howto code{font:12.5px var(--mono);background:var(--surface-2);padding:2px 6px;border-radius:5px;color:var(--text)}
+  footer{margin-top:28px;font-size:12px;color:var(--faint);font-family:var(--mono)}
+
+  @media (max-width:720px){
+    .wrap{padding-top:24px}
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .group-h{flex-wrap:wrap}
+    .group-h .desc{margin-left:0;text-align:left;width:100%}
+    .grid{grid-template-columns:1fr}
+  }
+  @media (prefers-reduced-motion:reduce){.card{transition:none}.card:hover{transform:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <div class="eyebrow">winstonclaude</div>
+      <h1>HTML Portal</h1>
+      <p class="lede">Các trang hướng dẫn dựng bằng Claude, chia theo thể loại và thời gian tạo. Bấm vào card để mở trang.</p>
+    </div>
+    <button class="icon-btn" id="themeBtn" aria-label="Đổi giao diện sáng / tối">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </header>
+
+  <section class="stats" aria-label="Tổng quan">
+    <div class="stat"><b id="sTotal">0</b><span>File HTML</span></div>
+    <div class="stat"><b id="sCats">0</b><span>Thể loại</span></div>
+    <div class="stat"><b id="sLatest">—</b><span>Tạo gần nhất</span></div>
+    <div class="stat"><b id="sSize">0</b><span>Tổng dung lượng</span></div>
+  </section>
+
+  <div class="toolbar">
+    <label class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Tìm theo tên, mô tả, đường dẫn…" aria-label="Tìm file">
+    </label>
+    <div class="seg" role="group" aria-label="Cách nhóm">
+      <button data-view="cat" aria-pressed="true">Theo thể loại</button>
+      <button data-view="time" aria-pressed="false">Theo thời gian</button>
+    </div>
+  </div>
+  <div class="chips" id="chips" role="group" aria-label="Lọc thể loại"></div>
+
+  <main id="list"></main>
+
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+/* ===== Thể loại: key → tên, mô tả, biến màu CSS ===== */
+const CATS = {
+  web:     { name: "Website",            desc: "Trang thật của winstonhoang.com",          c: "--c-web" },
+  concept: { name: "Concept design",     desc: "Thử nghiệm, không đưa lên portfolio",      c: "--c-concept" },
+  learn:   { name: "Học tập",            desc: "Lộ trình, tài liệu học",                   c: "--c-learn" },
+  tool:    { name: "Hệ thống & công cụ", desc: "Hướng dẫn hệ thống, tool, template",       c: "--c-tool" },
+  life:    { name: "Cá nhân",            desc: "Ghi chép đời sống, tử vi",                 c: "--c-life" },
+};
+
+/* ===== Danh sách file — path tính từ gốc vault; date = ngày tạo file; size = byte =====
+   Cập nhật lần cuối: 2026-11-08 (quét toàn vault, bỏ .git / .obsidian / node_modules) */
+const FILES = [
+  { title: "ComfyUI cho asset game slot", cat: "learn", date: "2026-11-08", size: 175647,
+    path: "comfyui.html",
+    desc: "Hướng dẫn ComfyUI từ 0 đến nâng cao cho asset slot trên M2 Max: sơ đồ node, lộ trình Level 0–5 có checkbox, cấu trúc prompt 10 tình huống, top 10 model cho game." },
+  { title: "Digital art cho game slot", cat: "learn", date: "2026-11-08", size: 139288,
+    path: "digital-art.html",
+    desc: "Giáo trình vẽ asset slot 7 level gộp từ 2 tài liệu: bàn kiểm tra value/silhouette tương tác, 50 bài tập có checkbox, tính nhịp học, công thức vật liệu, checklist giao file." },
+];
+
+/* Bản công khai: mọi trang nằm cùng thư mục với portal */
+const ROOT = "";
+const href = p => encodeURI(ROOT + p);
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[ch]));
+const fmtSize = b => b >= 1024*1024 ? (b/1048576).toFixed(1) + " MB" : Math.round(b/1024) + " KB";
+const fmtDate = d => { const [y,m,dd] = d.split("-"); return `${dd}/${m}/${y}`; };
+const monthLabel = d => { const [y,m] = d.split("-"); return `Tháng ${+m} / ${y}`; };
+
+/* Trạng thái: localStorage chỉ để nhớ cách xem, luôn bọc try/catch */
+const store = {
+  get(k, f){ try { return localStorage.getItem(k) ?? f; } catch { return f; } },
+  set(k, v){ try { localStorage.setItem(k, v); } catch {} },
+};
+const state = { view: store.get("portal-view", "cat"), cat: "all", q: "" };
+
+/* ===== Số liệu tổng ===== */
+function renderStats(){
+  const latest = [...FILES].sort((a,b) => b.date.localeCompare(a.date))[0];
+  $("#sTotal").textContent = FILES.length;
+  $("#sCats").textContent = new Set(FILES.map(f => f.cat)).size;
+  $("#sLatest").textContent = latest ? fmtDate(latest.date).slice(0,5) : "—";
+  $("#sSize").textContent = fmtSize(FILES.reduce((s,f) => s + f.size, 0));
+  $("#foot").textContent = `${FILES.length} file · cập nhật 08/11/2026 (thêm ComfyUI guide, Digital art guide)`;
+}
+
+/* ===== Chip lọc thể loại (kèm số file mỗi loại) ===== */
+function renderChips(){
+  const count = k => FILES.filter(f => f.cat === k).length;
+  const chip = (k, name, c, n) =>
+    `<button class="chip" data-cat="${k}" aria-pressed="${state.cat === k}" style="--c:var(${c})">
+       ${k === "all" ? "" : '<span class="dot"></span>'}${esc(name)}<span class="n">${n}</span></button>`;
+  $("#chips").innerHTML = chip("all", "Tất cả", "--text", FILES.length) +
+    Object.entries(CATS).filter(([k]) => count(k)).map(([k, v]) => chip(k, v.name, v.c, count(k))).join("");
+}
+
+function card(f){
+  const c = CATS[f.cat] || { name: f.cat, c: "--accent" };
+  // Biến --c / --cs: màu chữ + nền nhạt theo thể loại
+  return `<article class="card" style="--c:var(${c.c});--cs:var(${c.c}-s)">
+    <div class="card-top"><span class="tag">${esc(c.name)}</span><time class="date" datetime="${f.date}">${fmtDate(f.date)}</time></div>
+    <h3><a href="${href(f.path)}" target="_blank" rel="noopener">${esc(f.title)}</a></h3>
+    <p>${esc(f.desc)}</p>
+    ${f.note ? `<span class="note">⚠ ${esc(f.note)}</span>` : ""}
+    <div class="meta"><span class="path" title="${esc(f.path)}">${esc(f.path)}</span><span class="open">${fmtSize(f.size)} ↗</span></div>
+  </article>`;
+}
+
+/* ===== Danh sách: lọc → nhóm (theo thể loại hoặc tháng) → vẽ ===== */
+function renderList(){
+  const q = state.q.trim().toLowerCase();
+  const items = FILES
+    .filter(f => state.cat === "all" || f.cat === state.cat)
+    .filter(f => !q || [f.title, f.desc, f.path, CATS[f.cat]?.name].join(" ").toLowerCase().includes(q))
+    .sort((a,b) => b.date.localeCompare(a.date)); // mới nhất trước
+
+  if (!items.length){
+    $("#list").innerHTML = `<div class="empty">Không có file nào khớp “${esc(state.q)}”.</div>`;
+    return;
+  }
+
+  const groups = new Map();
+  if (state.view === "cat"){
+    Object.keys(CATS).forEach(k => { const g = items.filter(f => f.cat === k); if (g.length) groups.set(k, g); });
+  } else {
+    items.forEach(f => { const k = f.date.slice(0,7); groups.set(k, [...(groups.get(k) || []), f]); });
+  }
+
+  $("#list").innerHTML = [...groups].map(([k, g]) => {
+    const title = state.view === "cat" ? CATS[k].name : monthLabel(k);
+    const desc  = state.view === "cat" ? CATS[k].desc : "";
+    return `<section class="group">
+      <div class="group-h"><h2>${esc(title)}</h2><span class="n">${g.length}</span>${desc ? `<span class="desc">${esc(desc)}</span>` : ""}</div>
+      <div class="grid">${g.map(card).join("")}</div>
+    </section>`;
+  }).join("");
+}
+
+function syncSeg(){
+  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.view === state.view));
+}
+
+/* ===== Sự kiện ===== */
+$("#q").addEventListener("input", e => { state.q = e.target.value; renderList(); });
+$("#chips").addEventListener("click", e => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  state.cat = b.dataset.cat; renderChips(); renderList();
+});
+document.querySelector(".seg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  state.view = b.dataset.view; store.set("portal-view", state.view); syncSeg(); renderList();
+});
+/* Nút sáng/tối: đặt data-theme trên <html>, nhớ lựa chọn */
+const applyTheme = t => t ? document.documentElement.setAttribute("data-theme", t) : document.documentElement.removeAttribute("data-theme");
+applyTheme(store.get("portal-theme", ""));
+$("#themeBtn").addEventListener("click", () => {
+  const isDark = document.documentElement.dataset.theme
+    ? document.documentElement.dataset.theme === "dark"
+    : matchMedia("(prefers-color-scheme: dark)").matches;
+  const next = isDark ? "light" : "dark";
+  applyTheme(next); store.set("portal-theme", next);
+});
+
+renderStats(); renderChips(); syncSeg(); renderList();
+</script>
+</body>
+</html>
